@@ -93,9 +93,6 @@
             return '#FF4500';               
         });
 
-        // Variable para controlar que la animación en cascada solo ocurra al cargar la página
-        let delayed;
-
         new Chart(ctx, {
             type: 'bar',
             data: {
@@ -110,7 +107,31 @@
             },
             options: {
                 indexAxis: 'y', 
-                // --- AQUÍ ESTÁ LA MAGIA DE LA CARGA PROGRESIVA ---
+                // --- ANIMACIÓN SIMPLIFICADA Y SEGURA ---
                 animation: {
-                    onComplete: () => {
-                        delayed = true
+                    duration: 1500,
+                    delay: (context) => {
+                        // Simplemente multiplica la posición de la barra por 400 milisegundos
+                        return context.dataIndex * 400; 
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 150,
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        ticks: { color: 'white' }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { color: 'white', font: { size: 16, weight: 'bold' } }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

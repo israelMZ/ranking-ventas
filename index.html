@@ -9,7 +9,7 @@
         body {
             margin: 0;
             padding: 0;
-            overflow: hidden; /* Importante para que el lienzo 3D ocupe todo */
+            overflow: hidden; 
             color: white;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
@@ -46,7 +46,7 @@
         }
 
         h1 { 
-            position: absolute; /* Para que flote sobre el lienzo 3D */
+            position: absolute; 
             top: 40px;
             color: #FFD700; 
             text-align: center; 
@@ -56,7 +56,6 @@
             animation: flotarYBrillar 3s ease-in-out infinite;
         }
 
-        /* Contenedor para el lienzo 3D */
         #contenedor3d {
             position: fixed;
             top: 0;
@@ -71,7 +70,6 @@
 
     <video autoplay loop muted playsinline class="video-fondo">
         <source src="tigre.mp4" type="video/mp4">
-        Tu navegador no soporta videos.
     </video>
 
     <div class="overlay"></div>
@@ -81,7 +79,6 @@
     <div id="contenedor3d"></div>
 
     <script>
-        // --- DATOS DEL EQUIPO ---
         const datosVentas = [
             { nombre: 'Sasha', porcentaje: 120 },
             { nombre: 'Jeyko', porcentaje: 95 },
@@ -90,42 +87,107 @@
             { nombre: 'Isabelle', porcentaje: 45 }
         ];
 
-        // --- CONFIGURACIÓN DE THREE.JS ---
         const contenedor = document.getElementById('contenedor3d');
         const escena = new THREE.Scene();
         const camara = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); // alpha: true para fondo transparente
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); 
         renderer.setSize(window.innerWidth, window.innerHeight);
         contenedor.appendChild(renderer.domElement);
 
-        // --- LUCES ---
-        const luzAmbiente = new THREE.AmbientLight(0xffffff, 0.5);
+        const luzAmbiente = new THREE.AmbientLight(0xffffff, 0.7);
         escena.add(luzAmbiente);
         const luzPuntual = new THREE.PointLight(0xffffff, 1);
         luzPuntual.position.set(10, 10, 10);
         escena.add(luzPuntual);
 
-        // --- CREACIÓN DE LAS BARRAS 3D Y ETIQUETAS ---
-        const grupoBarras = new THREE.Group(); // Para animar todo el stack junto
+        const grupoBarras = new THREE.Group(); 
         escena.add(grupoBarras);
 
-        const materialVidrio = new THREE.MeshPhongMaterial({
-            color: 0xffffff,
-            specular: 0xffffff,
-            shininess: 100,
-            opacity: 0.3,
-            transparent: true,
-            side: THREE.DoubleSide
-        });
-
-        // Función para crear texturas de texto para las etiquetas
+        // ¡AQUÍ ESTABA EL ERROR! (Corregido ctxTexto sin espacio)
         function crearTexturaTexto(texto) {
             const canvasTexto = document.createElement('canvas');
-            const ctx Texto = canvasTexto.getContext('2d');
-            canvasTexto.width = 256;
-            canvasTexto.height = 64;
-            ctxTexto.font = 'Bold 32px Segoe UI';
+            const ctxTexto = canvasTexto.getContext('2d'); 
+            canvasTexto.width = 512;
+            canvasTexto.height = 128;
+            ctxTexto.font = 'Bold 40px Segoe UI';
             ctxTexto.fillStyle = 'white';
             ctxTexto.textAlign = 'center';
             ctxTexto.textBaseline = 'middle';
-            ctxTexto.fillText(texto, 128, 32);
+            ctxTexto.fillText(texto, 256, 64);
+            return new THREE.CanvasTexture(canvasTexto);
+        }
+
+        const barras3d = [];
+
+        datosVentas.forEach((asesor, index) => {
+            const ancho = 1.2;
+            const alto = asesor.porcentaje / 100 * 5; 
+            const profundidad = 1.2;
+            const geometriaBarra = new THREE.BoxGeometry(ancho, alto, profundidad);
+
+            let colorBase;
+            if (asesor.porcentaje >= 80) {
+                // Verdes vibrantes para los Master Closers / Pinnacle
+                colorBase = new THREE.Color(0x00FF7F); 
+            } else {
+                // Morados para los que están en camino
+                colorBase = new THREE.Color(0x8A2BE2); 
+            }
+
+            const materialBarra = new THREE.MeshPhongMaterial({
+                color: colorBase,
+                specular: 0xffffff,
+                shininess: 50,
+                opacity: 0.75,
+                transparent: true
+            });
+
+            const barraMesh = new THREE.Mesh(geometriaBarra, materialBarra);
+            barraMesh.position.set(0, index * -2, 0); 
+            grupoBarras.add(barraMesh);
+            barras3d.push(barraMesh);
+
+            const texturaNombre = crearTexturaTexto(`${asesor.nombre} (${asesor.porcentaje}%)`);
+            const materialEtiqueta = new THREE.SpriteMaterial({ map: texturaNombre, transparent: true });
+            const spriteEtiqueta = new THREE.Sprite(materialEtiqueta);
+            spriteEtiqueta.scale.set(4, 1, 1);
+            spriteEtiqueta.position.set(0, index * -2 + alto / 2 + 0.8, 0); 
+            grupoBarras.add(spriteEtiqueta);
+        });
+
+        // Alejar un poco la cámara para ver todas las barras
+        camara.position.set(0, -4, 10); 
+
+        const controls = new THREE.OrbitControls(camara, renderer.domElement);
+        controls.enablePan = false; 
+        controls.target.set(0, -4, 0); 
+        controls.update();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const tiempo = Date.now() * 0.001; 
+            barras3d.forEach((barra, index) => {
+                const offset = index * 0.5;
+                // Animación de levitación corregida
+                barra.position.y = (index * -2) + (datosVentas[index].porcentaje / 100 * 5 / 2) + Math.sin(tiempo + offset) * 0.15;
+            });
+
+            // Rotación suave de todo el bloque para que se vea muy 3D
+            grupoBarras.rotation.y = Math.sin(tiempo * 0.5) * 0.2;
+
+            controls.update(); 
+            renderer.render(escena, camara);
+        }
+
+        animate();
+
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
+            camara.aspect = window.innerWidth / window.innerHeight;
+            camara.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+</body>
+</html>

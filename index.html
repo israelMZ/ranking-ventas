@@ -2,21 +2,21 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Ranking de Ventas Élite 3D</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <title>Ranking de Ventas Élite</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             margin: 0;
-            padding: 0;
-            overflow: hidden; 
+            padding: 40px;
             color: white;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
+            overflow-x: hidden;
         }
 
+        /* Video de fondo a pantalla completa */
         .video-fondo {
             position: fixed;
             right: 0;
@@ -29,6 +29,7 @@
             object-fit: cover;
         }
 
+        /* Capa oscura sobre el video */
         .overlay {
             position: fixed;
             top: 0;
@@ -39,30 +40,34 @@
             z-index: -1;
         }
 
+        /* Panel de Cristal (Glassmorphism) */
+        .container {
+            width: 85%;
+            max-width: 1200px;
+            background: rgba(20, 20, 25, 0.4); /* Fondo muy oscuro y transparente */
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5); /* Sombra suave */
+            border: 1px solid rgba(255, 255, 255, 0.1); /* Borde blanco casi invisible */
+            backdrop-filter: blur(12px); /* El efecto de cristal desenfocado */
+            z-index: 1;
+        }
+
+        /* Animación del Título */
         @keyframes flotarYBrillar {
             0% { transform: translateY(0px); text-shadow: 0 0 10px #FFD700; }
-            50% { transform: translateY(-10px); text-shadow: 0 0 25px #FFD700, 0 0 15px #FFF; }
+            50% { transform: translateY(-8px); text-shadow: 0 0 25px #FFD700, 0 0 15px #FFF; }
             100% { transform: translateY(0px); text-shadow: 0 0 10px #FFD700; }
         }
 
         h1 { 
-            position: absolute; 
-            top: 40px;
             color: #FFD700; 
             text-align: center; 
             z-index: 1; 
-            font-size: 2.5em;
-            margin: 0;
+            font-size: 3em;
+            letter-spacing: 2px;
+            margin-bottom: 40px;
             animation: flotarYBrillar 3s ease-in-out infinite;
-        }
-
-        #contenedor3d {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
         }
     </style>
 </head>
@@ -75,119 +80,57 @@
     <div class="overlay"></div>
 
     <h1>🏆 TABLA DE PUNTUACIÓN 🏆</h1>
-
-    <div id="contenedor3d"></div>
+    
+    <div class="container">
+        <canvas id="rankingVentas" height="100"></canvas>
+    </div>
 
     <script>
-        const datosVentas = [
-            { nombre: 'Sasha', porcentaje: 120 },
-            { nombre: 'Jeyko', porcentaje: 95 },
-            { nombre: 'Rickson', porcentaje: 82 },
-            { nombre: 'Italo', porcentaje: 70 },
-            { nombre: 'Isabelle', porcentaje: 45 }
-        ];
+        const ctx = document.getElementById('rankingVentas').getContext('2d');
+        
+        // Datos de tu equipo
+        const nombres = ['Sasha', 'Jeyko', 'Rickson', 'Italo', 'Isabelle'];
+        const porcentajes = [120, 95, 82, 70, 45]; 
 
-        const contenedor = document.getElementById('contenedor3d');
-        const escena = new THREE.Scene();
-        const camara = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); 
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        contenedor.appendChild(renderer.domElement);
+        // Paleta de Colores: Verde Esmeralda (Top) y Morado Neón (Resto)
+        const coloresFondo = porcentajes.map(p => p >= 80 ? 'rgba(0, 255, 127, 0.7)' : 'rgba(138, 43, 226, 0.7)');
+        const coloresBorde = porcentajes.map(p => p >= 80 ? '#00FF7F' : '#8A2BE2');
 
-        const luzAmbiente = new THREE.AmbientLight(0xffffff, 0.7);
-        escena.add(luzAmbiente);
-        const luzPuntual = new THREE.PointLight(0xffffff, 1);
-        luzPuntual.position.set(10, 10, 10);
-        escena.add(luzPuntual);
+        // Configuración global de la fuente para que se vea más profesional
+        Chart.defaults.color = '#ffffff';
+        Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
 
-        const grupoBarras = new THREE.Group(); 
-        escena.add(grupoBarras);
-
-        // ¡AQUÍ ESTABA EL ERROR! (Corregido ctxTexto sin espacio)
-        function crearTexturaTexto(texto) {
-            const canvasTexto = document.createElement('canvas');
-            const ctxTexto = canvasTexto.getContext('2d'); 
-            canvasTexto.width = 512;
-            canvasTexto.height = 128;
-            ctxTexto.font = 'Bold 40px Segoe UI';
-            ctxTexto.fillStyle = 'white';
-            ctxTexto.textAlign = 'center';
-            ctxTexto.textBaseline = 'middle';
-            ctxTexto.fillText(texto, 256, 64);
-            return new THREE.CanvasTexture(canvasTexto);
-        }
-
-        const barras3d = [];
-
-        datosVentas.forEach((asesor, index) => {
-            const ancho = 1.2;
-            const alto = asesor.porcentaje / 100 * 5; 
-            const profundidad = 1.2;
-            const geometriaBarra = new THREE.BoxGeometry(ancho, alto, profundidad);
-
-            let colorBase;
-            if (asesor.porcentaje >= 80) {
-                // Verdes vibrantes para los Master Closers / Pinnacle
-                colorBase = new THREE.Color(0x00FF7F); 
-            } else {
-                // Morados para los que están en camino
-                colorBase = new THREE.Color(0x8A2BE2); 
-            }
-
-            const materialBarra = new THREE.MeshPhongMaterial({
-                color: colorBase,
-                specular: 0xffffff,
-                shininess: 50,
-                opacity: 0.75,
-                transparent: true
-            });
-
-            const barraMesh = new THREE.Mesh(geometriaBarra, materialBarra);
-            barraMesh.position.set(0, index * -2, 0); 
-            grupoBarras.add(barraMesh);
-            barras3d.push(barraMesh);
-
-            const texturaNombre = crearTexturaTexto(`${asesor.nombre} (${asesor.porcentaje}%)`);
-            const materialEtiqueta = new THREE.SpriteMaterial({ map: texturaNombre, transparent: true });
-            const spriteEtiqueta = new THREE.Sprite(materialEtiqueta);
-            spriteEtiqueta.scale.set(4, 1, 1);
-            spriteEtiqueta.position.set(0, index * -2 + alto / 2 + 0.8, 0); 
-            grupoBarras.add(spriteEtiqueta);
-        });
-
-        // Alejar un poco la cámara para ver todas las barras
-        camara.position.set(0, -4, 10); 
-
-        const controls = new THREE.OrbitControls(camara, renderer.domElement);
-        controls.enablePan = false; 
-        controls.target.set(0, -4, 0); 
-        controls.update();
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            const tiempo = Date.now() * 0.001; 
-            barras3d.forEach((barra, index) => {
-                const offset = index * 0.5;
-                // Animación de levitación corregida
-                barra.position.y = (index * -2) + (datosVentas[index].porcentaje / 100 * 5 / 2) + Math.sin(tiempo + offset) * 0.15;
-            });
-
-            // Rotación suave de todo el bloque para que se vea muy 3D
-            grupoBarras.rotation.y = Math.sin(tiempo * 0.5) * 0.2;
-
-            controls.update(); 
-            renderer.render(escena, camara);
-        }
-
-        animate();
-
-        window.addEventListener('resize', onWindowResize, false);
-        function onWindowResize() {
-            camara.aspect = window.innerWidth / window.innerHeight;
-            camara.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-    </script>
-</body>
-</html>
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: nombres,
+                datasets: [{
+                    label: '% Logrado',
+                    data: porcentajes,
+                    backgroundColor: coloresFondo,
+                    borderColor: coloresBorde,
+                    borderWidth: 2,
+                    borderRadius: 8, // Bordes redondeados en las barras
+                    borderSkipped: false,
+                    barPercentage: 0.6 // Hace las barras un poco más delgadas y elegantes
+                }]
+            },
+            options: {
+                indexAxis: 'y', 
+                responsive: true,
+                // Animación en cascada
+                animation: {
+                    duration: 1500,
+                    delay: (context) => context.dataIndex * 300 
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleFont: { size: 16 },
+                        bodyFont: { size: 14 },
+                        padding: 12,
+                        displayColors: false
+                    }
+                },
+                scales:

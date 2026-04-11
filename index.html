@@ -49,20 +49,10 @@
             z-index: 1;
         }
 
-        /* --- AQUÍ ESTÁ LA MAGIA DE LA ANIMACIÓN --- */
         @keyframes flotarYBrillar {
-            0% { 
-                transform: translateY(0px); /* Posición original */
-                text-shadow: 0 0 10px #FFD700; /* Brillo normal */
-            }
-            50% { 
-                transform: translateY(-10px); /* Sube 10 píxeles */
-                text-shadow: 0 0 25px #FFD700, 0 0 15px #FFF; /* Brilla mucho más */
-            }
-            100% { 
-                transform: translateY(0px); /* Vuelve a la posición original */
-                text-shadow: 0 0 10px #FFD700; 
-            }
+            0% { transform: translateY(0px); text-shadow: 0 0 10px #FFD700; }
+            50% { transform: translateY(-10px); text-shadow: 0 0 25px #FFD700, 0 0 15px #FFF; }
+            100% { transform: translateY(0px); text-shadow: 0 0 10px #FFD700; }
         }
 
         h1 { 
@@ -71,7 +61,6 @@
             z-index: 1; 
             font-size: 2.5em;
             margin-bottom: 30px;
-            /* Aplicamos la animación: dura 3 segundos, es suave (ease-in-out) y se repite infinito */
             animation: flotarYBrillar 3s ease-in-out infinite;
         }
     </style>
@@ -94,16 +83,18 @@
     <script>
         const ctx = document.getElementById('rankingVentas').getContext('2d');
         
-        // Nombres y porcentajes de tu equipo
         const nombres = ['Sasha', 'Jeyko', 'Rickson', 'Italo', 'Isabelle'];
         const porcentajes = [120, 95, 82, 70, 45]; 
 
         const colores = porcentajes.map(p => {
-            if (p >= 100) return '#FFD700'; // Oro 
-            if (p >= 80) return '#00FF7F';  // Verde 
-            if (p >= 50) return '#00BFFF';  // Azul 
-            return '#FF4500';               // Rojo 
+            if (p >= 100) return '#FFD700'; 
+            if (p >= 80) return '#00FF7F';  
+            if (p >= 50) return '#00BFFF';  
+            return '#FF4500';               
         });
+
+        // Variable para controlar que la animación en cascada solo ocurra al cargar la página
+        let delayed;
 
         new Chart(ctx, {
             type: 'bar',
@@ -119,23 +110,7 @@
             },
             options: {
                 indexAxis: 'y', 
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        max: 150,
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                        ticks: { color: 'white' }
-                    },
-                    y: {
-                        grid: { display: false },
-                        ticks: { color: 'white', font: { size: 16, weight: 'bold' } }
-                    }
-                }
-            }
-        });
-    </script>
-</body>
-</html>
+                // --- AQUÍ ESTÁ LA MAGIA DE LA CARGA PROGRESIVA ---
+                animation: {
+                    onComplete: () => {
+                        delayed = true

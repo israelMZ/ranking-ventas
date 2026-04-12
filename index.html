@@ -34,7 +34,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.7); /* Oscurecí un 10% más el fondo para que el neón resalte más */
             z-index: -1;
         }
 
@@ -50,12 +50,16 @@
             z-index: 1;
         }
 
-        /* Altura aumentada a 750px para que los 14 asesores entren perfectamente */
         .chart-wrapper {
             position: relative;
             height: 70vh; 
             min-height: 750px; 
             width: 100%;
+        }
+
+        /* EL TRUCO CSS: Este filtro hace que todo lo que se dibuje en el canvas emita luz */
+        #rankingVentas {
+            filter: drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.3));
         }
 
         @keyframes flotarYBrillar {
@@ -95,16 +99,14 @@
         const ctx = document.getElementById('rankingVentas').getContext('2d');
         
         const nombres = ['VALERIA V', 'FABIAN', 'EVA', 'VALERIA M', 'JOMAJAIRA', 'ROMINA', 'JOSEPH','DIEGO','BRIANNA','ALVARO','FRANKI','ALBERT','KENNY','KIMBERLY'];
-        
-        // Ventas de ejemplo para que veas los colores. ¡Cámbialas por las reales!
         const ventas = [32, 28, 26, 22, 20, 19, 15, 14, 12, 10, 8, 7, 5, 2]; 
 
-        // LÓGICA DE OBJETIVOS (20, 25, 30)
+        // Colores de las barras
         const coloresFondo = ventas.map(v => {
-            if (v >= 30) return 'rgba(255, 215, 0, 0.8)';   // Oro (Objetivo 3)
-            if (v >= 25) return 'rgba(0, 255, 127, 0.8)';   // Verde (Objetivo 2)
-            if (v >= 20) return 'rgba(0, 191, 255, 0.8)';   // Azul (Objetivo 1)
-            return 'rgba(138, 43, 226, 0.5)';               // Morado (En camino)
+            if (v >= 30) return 'rgba(255, 215, 0, 0.8)';   // Oro
+            if (v >= 25) return 'rgba(0, 255, 127, 0.8)';   // Verde Neón
+            if (v >= 20) return 'rgba(0, 191, 255, 0.8)';   // Azul Neón
+            return 'rgba(138, 43, 226, 0.6)';               // Morado
         });
 
         const coloresBorde = ventas.map(v => {
@@ -114,7 +116,14 @@
             return '#8A2BE2';
         });
 
-        Chart.defaults.color = '#ffffff';
+        // NUEVO: Colores de los NOMBRES (Textos más brillantes que el fondo)
+        const coloresTexto = ventas.map(v => {
+            if (v >= 30) return '#FFD700'; // Oro Brillante
+            if (v >= 25) return '#00FF7F'; // Verde Neón Brillante
+            if (v >= 20) return '#00BFFF'; // Azul Neón Brillante
+            return '#E066FF';              // Morado Brillante claro
+        });
+
         Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
 
         let delayed;
@@ -146,7 +155,7 @@
                     delay: (context) => {
                         let delay = 0;
                         if (context.type === 'data' && context.mode === 'default' && !delayed) {
-                            delay = context.dataIndex * 150; // Lo bajé un poco a 150 para que cargue más rápido al ser 14 personas
+                            delay = context.dataIndex * 150; 
                         }
                         return delay;
                     },
@@ -164,22 +173,23 @@
                 scales: {
                     x: {
                         beginAtZero: true,
-                        max: 35, // ESCALA MÁXIMA AJUSTADA PARA QUE EL 30 LUZCA GENIAL
+                        max: 35, 
                         grid: { 
-                            color: 'rgba(255, 255, 255, 0.1)', // Líneas de guía un poco más visibles
+                            color: 'rgba(255, 255, 255, 0.1)', 
                             drawBorder: false
                         },
                         ticks: { 
                             color: '#aaaaaa',
                             font: { size: 14 },
-                            stepSize: 5 // Para que los números abajo vayan de 5 en 5 (5, 10, 15, 20...)
+                            stepSize: 5 
                         }
                     },
                     y: {
                         grid: { display: false },
                         ticks: { 
-                            color: 'white', 
-                            font: { size: 16, weight: 'bold' } // Letra un poquitito más pequeña para que entren todos
+                            // AQUÍ ASIGNAMOS LOS COLORES NEÓN A LOS NOMBRES
+                            color: coloresTexto, 
+                            font: { size: 16, weight: 'bold' } 
                         }
                     }
                 }

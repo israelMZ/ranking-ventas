@@ -5,6 +5,7 @@
     <title>Ranking de Ventas Élite</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        /* --- ESTILOS GENERALES Y FONDO --- */
         body {
             margin: 0;
             padding: 40px;
@@ -17,52 +18,36 @@
         }
 
         .video-fondo {
-            position: fixed;
-            right: 0;
-            bottom: 0;
-            min-width: 100%;
-            min-height: 100%;
-            width: auto;
-            height: auto;
-            z-index: -2;
-            object-fit: cover;
+            position: fixed; right: 0; bottom: 0;
+            min-width: 100%; min-height: 100%;
+            z-index: -2; object-fit: cover;
         }
 
         .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.75);
             z-index: -1;
         }
 
+        /* --- CONTENEDOR PRINCIPAL DEL GRÁFICO --- */
         .container {
-            width: 90%;
-            max-width: 1300px;
+            width: 90%; max-width: 1300px;
             background: rgba(20, 20, 25, 0.4);
-            padding: 40px;
-            border-radius: 25px;
+            padding: 40px; border-radius: 25px;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(15px);
-            z-index: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            z-index: 1; display: flex;
+            flex-direction: column; align-items: center;
         }
 
         .chart-wrapper {
-            position: relative;
-            height: 80vh; 
-            min-height: 1000px; 
-            width: 100%;
+            position: relative; height: 80vh; 
+            min-height: 1000px; width: 100%;
         }
 
-        #rankingVentas {
-            filter: drop-shadow(0px 0px 10px rgba(255, 255, 255, 0.25));
-        }
+        #rankingVentas { filter: drop-shadow(0px 0px 10px rgba(255, 255, 255, 0.25)); }
 
         @keyframes flotarYBrillar {
             0% { transform: translateY(0px); text-shadow: 0 0 10px #FFD700; }
@@ -71,115 +56,64 @@
         }
 
         h1 { 
-            color: #FFD700; 
-            text-align: center; 
-            z-index: 1; 
-            font-size: 3.5em;
-            letter-spacing: 3px;
-            margin-bottom: 30px;
+            color: #FFD700; text-align: center; z-index: 1; 
+            font-size: 3.5em; letter-spacing: 3px; margin-bottom: 30px;
             animation: flotarYBrillar 3s ease-in-out infinite;
         }
 
+        /* --- BOTÓN PARA ABRIR LA TABLA --- */
         .btn-estadisticas {
-            margin-top: 30px;
-            padding: 15px 40px;
-            font-size: 1.2em;
-            font-weight: bold;
-            color: white;
-            background: rgba(0, 191, 255, 0.2);
-            border: 2px solid #00BFFF;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            margin-top: 30px; padding: 15px 40px; font-size: 1.2em; font-weight: bold;
+            color: white; background: rgba(0, 191, 255, 0.2);
+            border: 2px solid #00BFFF; border-radius: 50px; cursor: pointer;
+            transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 2px;
             box-shadow: 0 0 15px rgba(0, 191, 255, 0.4);
         }
+        .btn-estadisticas:hover { background: #00BFFF; box-shadow: 0 0 30px rgba(0, 191, 255, 0.8); transform: scale(1.05); }
 
-        .btn-estadisticas:hover {
-            background: #00BFFF;
-            box-shadow: 0 0 30px rgba(0, 191, 255, 0.8);
-            transform: scale(1.05);
-        }
-
+        /* --- PANEL MODAL (POP-UP) --- */
         #modalStats {
-            display: none; 
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(20px);
-            z-index: 999;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            opacity: 0;
-            transition: opacity 0.4s ease;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(20px);
+            z-index: 999; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.4s ease; padding: 20px; box-sizing: border-box;
         }
-
-        #modalStats.mostrar {
-            display: flex;
-            opacity: 1;
-        }
+        #modalStats.mostrar { display: flex; opacity: 1; }
 
         .modal-contenido {
-            background: rgba(30, 30, 40, 0.6);
-            padding: 50px;
-            border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            text-align: center;
-            box-shadow: 0 0 50px rgba(0, 255, 127, 0.2);
-            position: relative;
+            background: rgba(20, 20, 25, 0.8); padding: 40px; border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1); width: 100%; max-width: 1500px;
+            max-height: 90vh; display: flex; flex-direction: column; position: relative;
+            box-shadow: 0 0 50px rgba(0, 191, 255, 0.2);
         }
 
-        .modal-titulo {
-            color: #00FF7F;
-            font-size: 2.5em;
-            margin-top: 0;
-            margin-bottom: 40px;
-            text-shadow: 0 0 20px #00FF7F;
-        }
-
-        .stats-grid {
-            display: flex;
-            gap: 40px;
-            justify-content: center;
-        }
-
-        .stat-card {
-            background: rgba(0, 0, 0, 0.5);
-            padding: 30px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            min-width: 180px;
-        }
-
-        .stat-valor {
-            font-size: 4em;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-
-        .stat-label {
-            font-size: 1.2em;
-            color: #bbbbbb;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .color-ingresadas { color: #00BFFF; text-shadow: 0 0 20px #00BFFF; }
-        .color-caidas { color: #FF4500; text-shadow: 0 0 20px #FF4500; }
-        .color-cobertura { color: #FFD700; text-shadow: 0 0 20px #FFD700; }
+        .modal-titulo { color: #00BFFF; font-size: 2em; margin-top: 0; margin-bottom: 20px; text-align: center; text-shadow: 0 0 15px #00BFFF; }
 
         .btn-cerrar {
-            position: absolute;
-            top: 20px; right: 30px;
-            font-size: 2em;
-            color: white;
-            cursor: pointer;
-            transition: color 0.3s ease;
+            position: absolute; top: 20px; right: 30px; font-size: 2em; color: white; cursor: pointer; transition: color 0.3s ease;
         }
-
         .btn-cerrar:hover { color: #FF4500; }
+
+        /* --- ESTILOS DE LA TABLA TIPO EXCEL (NEÓN) --- */
+        .contenedor-tabla { overflow-x: auto; overflow-y: auto; flex-grow: 1; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
+        
+        table { width: 100%; border-collapse: collapse; text-align: center; white-space: nowrap; }
+        
+        th { padding: 15px; font-size: 14px; letter-spacing: 1px; color: white; background: rgba(0,0,0,0.6); position: sticky; top: 0; z-index: 2; border-bottom: 2px solid rgba(255,255,255,0.2); }
+        td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-weight: bold; font-size: 15px; }
+
+        tr:hover td { filter: brightness(1.5); }
+
+        /* Colores basados en tu Excel adaptados al Glassmorphism */
+        .col-asesor { background: rgba(50, 50, 50, 0.4); text-align: left; padding-left: 20px; }
+        .col-naranja { background: rgba(255, 140, 0, 0.15); color: #FFB04F; } /* Ingresos, Total, Convertibilidad */
+        .col-rojo { background: rgba(255, 69, 0, 0.15); color: #FF6347; }    /* Canceladas */
+        .col-azul { background: rgba(0, 191, 255, 0.15); color: #00BFFF; }   /* Programa */
+        .col-amarillo { background: rgba(255, 215, 0, 0.15); color: #FFD700; } /* Pendiente */
+        .col-verde { background: rgba(50, 205, 50, 0.15); color: #32CD32; }  /* Instaladas */
+
+        /* Borde divisorio sutil entre bloques de columnas */
+        .border-right { border-right: 1px solid rgba(255,255,255,0.1); }
 
     </style>
 </head>
@@ -197,26 +131,32 @@
         <div class="chart-wrapper">
             <canvas id="rankingVentas"></canvas>
         </div>
-        <button id="btnAbrirStats" class="btn-estadisticas">📊 Rendimiento Global</button>
+        <button id="btnAbrirStats" class="btn-estadisticas">📊 TABLA DE DESGLOSE WOW</button>
     </div>
 
     <div id="modalStats">
         <div class="modal-contenido">
             <span id="btnCerrarStats" class="btn-cerrar">✖</span>
-            <h2 class="modal-titulo">RENDIMIENTO GLOBAL DEL EQUIPO</h2>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-label">Total Ingresadas</div>
-                    <div id="valIngresadas" class="stat-valor color-ingresadas">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Total Caídas</div>
-                    <div id="valCaidas" class="stat-valor color-caidas">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Cobertibilidad</div>
-                    <div id="valCobertura" class="stat-valor color-cobertura">0%</div>
-                </div>
+            <h2 class="modal-titulo">REPORTE DETALLADO POR ASESOR</h2>
+            
+            <div class="contenedor-tabla">
+                <table id="tablaExcel">
+                    <thead>
+                        <tr>
+                            <th class="col-asesor border-right">ASESOR</th>
+                            <th class="col-naranja border-right">INGRESOS</th>
+                            <th class="col-rojo">CANCELADA CLIENTE</th>
+                            <th class="col-rojo border-right">CANCELADA WOW</th>
+                            <th class="col-azul border-right">PROGRAMA</th>
+                            <th class="col-amarillo border-right">PENDIENTE</th>
+                            <th class="col-verde border-right">INSTALADAS</th>
+                            <th class="col-naranja">TOTAL</th>
+                            <th class="col-naranja">CONVERTIBILIDAD X ASES</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoTabla">
+                        </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -224,54 +164,59 @@
     <script>
         const ctx = document.getElementById('rankingVentas').getContext('2d');
         
-        // --- 1. BASE DE DATOS DETALLADA POR ASESOR ---
-        // Ahora ingresas las 'ventas' (aprobadas) y las 'caidas' individualmente
+        // --- 1. BASE DE DATOS (CON LOS DATOS EXACTOS DE TU IMAGEN) ---
+        // 'instaladas' es la variable que determina el ranking principal en el gráfico de barras.
         const asesoresBase = [
-            { nombre: 'VALERIA V', ventas: 32, caidas: 4 },
-            { nombre: 'FABIAN', ventas: 28, caidas: 6 },
-            { nombre: 'EVA', ventas: 26, caidas: 2 },
-            { nombre: 'VALERIA M', ventas: 22, caidas: 5 },
-            { nombre: 'JOMAJAIRA', ventas: 21, caidas: 3 },
-            { nombre: 'ROMINA', ventas: 19, caidas: 8 },
-            { nombre: 'JOSEPH', ventas: 15, caidas: 1 },
-            { nombre: 'DIEGO', ventas: 14, caidas: 2 },
-            { nombre: 'BRIANNA', ventas: 12, caidas: 4 },
-            { nombre: 'ALVARO', ventas: 10, caidas: 0 },
-            { nombre: 'FRANKI', ventas: 9, caidas: 1 },
-            { nombre: 'ALBERT', ventas: 8, caidas: 2 },
-            { nombre: 'KENNY', ventas: 5, caidas: 0 },
-            { nombre: 'KIMBERLY', ventas: 4, caidas: 3 },
-            { nombre: 'ISABELLE', ventas: 3, caidas: 1 },
-            { nombre: 'HENRY', ventas: 2, caidas: 0 },
-            { nombre: 'LEONARDO C', ventas: 5, caidas: 2 },
-            { nombre: 'LEONARDO Y', ventas: 6, caidas: 1 },
-            { nombre: 'ARMANDO', ventas: 1, caidas: 4 },
-            { nombre: 'PEDRO', ventas: 2, caidas: 1 }
+            { nombre: 'ISABELLE GARCIA', ingresos: 25, cancCliente: 5, cancWow: 2, programa: 3, pendiente: 0, instaladas: 15 },
+            { nombre: 'VALERIA VALDERRAMA', ingresos: 19, cancCliente: 7, cancWow: 1, programa: 2, pendiente: 0, instaladas: 8 },
+            { nombre: 'JOSEPH LUJAN', ingresos: 18, cancCliente: 4, cancWow: 3, programa: 2, pendiente: 1, instaladas: 8 },
+            { nombre: 'LEONARDO CASTILLO', ingresos: 15, cancCliente: 1, cancWow: 0, programa: 1, pendiente: 1, instaladas: 12 },
+            { nombre: 'FRANKI PALOMINO', ingresos: 13, cancCliente: 2, cancWow: 0, programa: 3, pendiente: 1, instaladas: 7 },
+            { nombre: 'JOMAJAIRA PAJUELO', ingresos: 11, cancCliente: 4, cancWow: 1, programa: 1, pendiente: 1, instaladas: 4 },
+            { nombre: 'KIMBERLY COCK', ingresos: 10, cancCliente: 1, cancWow: 0, programa: 2, pendiente: 2, instaladas: 5 },
+            { nombre: 'HENRY MAMANI', ingresos: 9, cancCliente: 2, cancWow: 1, programa: 2, pendiente: 0, instaladas: 4 },
+            { nombre: 'ALBERT HUAMANI', ingresos: 8, cancCliente: 1, cancWow: 0, programa: 1, pendiente: 1, instaladas: 5 },
+            { nombre: 'LEONARDO YOBERA', ingresos: 7, cancCliente: 4, cancWow: 2, programa: 0, pendiente: 0, instaladas: 1 },
+            { nombre: 'ROMINA SOLIS', ingresos: 6, cancCliente: 3, cancWow: 0, programa: 1, pendiente: 0, instaladas: 2 },
+            { nombre: 'BRIANNA CHAVARRI', ingresos: 4, cancCliente: 0, cancWow: 2, programa: 0, pendiente: 0, instaladas: 2 },
+            { nombre: 'DIEGO OLIVARES', ingresos: 3, cancCliente: 0, cancWow: 1, programa: 0, pendiente: 0, instaladas: 2 }
         ];
 
-        // --- 2. CÁLCULOS GLOBALES AUTOMÁTICOS ---
-        const totalAprobadas = asesoresBase.reduce((suma, as) => suma + as.ventas, 0);
-        const totalCaidas = asesoresBase.reduce((suma, as) => suma + as.caidas, 0);
-        const totalIngresadas = totalAprobadas + totalCaidas;
+        // --- 2. MOTOR MATEMÁTICO Y ORDENAMIENTO ---
+        // Ordenamos por Instaladas de mayor a menor para el gráfico
+        asesoresBase.sort((a, b) => b.instaladas - a.instaladas);
+
+        // Generamos las filas de la tabla automáticamente
+        const cuerpoTabla = document.getElementById('cuerpoTabla');
         
-        let cobertibilidadGlobal = 0;
-        if (totalIngresadas > 0) {
-            cobertibilidadGlobal = ((totalAprobadas / totalIngresadas) * 100).toFixed(1);
-        }
+        asesoresBase.forEach(as => {
+            // Cálculos automáticos
+            const total = as.cancCliente + as.cancWow + as.programa + as.pendiente + as.instaladas;
+            const convertibilidad = as.ingresos > 0 ? ((as.instaladas / as.ingresos) * 100).toFixed(2) : "0.00";
 
-        // Insertar los cálculos en el panel HTML
-        document.getElementById('valIngresadas').innerText = totalIngresadas;
-        document.getElementById('valCaidas').innerText = totalCaidas;
-        document.getElementById('valCobertura').innerText = cobertibilidadGlobal + '%';
+            // Inyectamos el HTML de la fila con los colores correspondientes
+            const fila = `
+                <tr>
+                    <td class="col-asesor border-right">${as.nombre}</td>
+                    <td class="col-naranja border-right">${as.ingresos}</td>
+                    <td class="col-rojo">${as.cancCliente}</td>
+                    <td class="col-rojo border-right">${as.cancWow}</td>
+                    <td class="col-azul border-right">${as.programa}</td>
+                    <td class="col-amarillo border-right">${as.pendiente}</td>
+                    <td class="col-verde border-right">${as.instaladas}</td>
+                    <td class="col-naranja">${total}</td>
+                    <td class="col-naranja">${convertibilidad} %</td>
+                </tr>
+            `;
+            cuerpoTabla.innerHTML += fila;
+        });
 
-        // Gestión del Modal
+        // --- 3. LÓGICA DE APERTURA DEL MODAL ---
         const modal = document.getElementById('modalStats');
         document.getElementById('btnAbrirStats').addEventListener('click', () => modal.classList.add('mostrar'));
         document.getElementById('btnCerrarStats').addEventListener('click', () => modal.classList.remove('mostrar'));
 
-        // --- 3. MOTOR DE ORDENAMIENTO (Por Ventas Aprobadas) ---
-        asesoresBase.sort((a, b) => b.ventas - a.ventas);
-
+        // --- 4. PREPARACIÓN DE DATOS PARA EL GRÁFICO ---
         const nombresConInsignia = asesoresBase.map((as, index) => {
             if (index === 0) return '👑 ' + as.nombre;
             if (index === 1) return '🥈 ' + as.nombre;
@@ -279,41 +224,39 @@
             return as.nombre;
         });
 
-        const ventasOrdenadas = asesoresBase.map(as => as.ventas);
+        const ventasOrdenadas = asesoresBase.map(as => as.instaladas); // El ranking usa "Instaladas"
 
-        // --- 4. COLORES ---
         const coloresFondo = ventasOrdenadas.map(v => {
-            if (v >= 30) return 'rgba(255, 215, 0, 0.8)';   // ORO
-            if (v >= 25) return 'rgba(0, 255, 127, 0.8)';   // VERDE
-            if (v >= 20) return 'rgba(0, 191, 255, 0.8)';   // AZUL
+            if (v >= 10) return 'rgba(255, 215, 0, 0.8)';   // ORO (>10 instaladas)
+            if (v >= 7) return 'rgba(0, 255, 127, 0.8)';    // VERDE
+            if (v >= 4) return 'rgba(0, 191, 255, 0.8)';    // AZUL
             return 'rgba(138, 43, 226, 0.6)';               // MORADO
         });
 
         const coloresBorde = ventasOrdenadas.map(v => {
-            if (v >= 30) return '#FFD700';
-            if (v >= 25) return '#00FF7F';
-            if (v >= 20) return '#00BFFF';
+            if (v >= 10) return '#FFD700';
+            if (v >= 7) return '#00FF7F';
+            if (v >= 4) return '#00BFFF';
             return '#8A2BE2';
         });
 
         const coloresTextoY = ventasOrdenadas.map(v => {
-            if (v >= 30) return '#FFD700';
-            if (v >= 25) return '#00FF7F';
-            if (v >= 20) return '#00BFFF';
+            if (v >= 10) return '#FFD700';
+            if (v >= 7) return '#00FF7F';
+            if (v >= 4) return '#00BFFF';
             return '#E066FF';
         });
 
         Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-
         let delayed;
 
-        // --- 5. RENDERIZADO DEL GRÁFICO ---
+        // --- 5. RENDERIZADO DEL GRÁFICO (CHART.JS) ---
         new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: nombresConInsignia,
                 datasets: [{
-                    label: 'Ventas Logradas',
+                    label: 'Ventas Instaladas',
                     data: ventasOrdenadas,
                     backgroundColor: coloresFondo,
                     borderColor: coloresBorde,
@@ -345,22 +288,14 @@
                         bodyFont: { size: 15 },
                         padding: 15,
                         displayColors: false,
-                        // --- ESTADÍSTICAS INDIVIDUALES AL PASAR EL RATÓN ---
                         callbacks: {
                             label: function(context) {
-                                const index = context.dataIndex;
-                                const aprobadas = asesoresBase[index].ventas;
-                                const caidas = asesoresBase[index].caidas;
-                                const ingresadas = aprobadas + caidas;
-                                let efectividad = 0;
-                                if (ingresadas > 0) {
-                                    efectividad = ((aprobadas / ingresadas) * 100).toFixed(1);
-                                }
-                                
+                                const as = asesoresBase[context.dataIndex];
+                                const conv = as.ingresos > 0 ? ((as.instaladas / as.ingresos) * 100).toFixed(1) : "0.0";
                                 return [
-                                    ` ✅ Aprobadas: ${aprobadas}`,
-                                    ` ❌ Caídas: ${caidas}`,
-                                    ` 📊 Efectividad: ${efectividad}%`
+                                    ` ✅ Instaladas: ${as.instaladas}`,
+                                    ` 📥 Ingresadas: ${as.ingresos}`,
+                                    ` 📊 Convertibilidad: ${conv}%`
                                 ];
                             }
                         }
@@ -369,16 +304,13 @@
                 scales: {
                     x: {
                         beginAtZero: true,
-                        max: 35, 
-                        grid: { 
-                            color: 'rgba(255, 255, 255, 0.08)',
-                            drawBorder: false
-                        },
-                        ticks: { color: '#bbbbbb', font: { size: 14 }, stepSize: 5 }
+                        max: 20, // Ajustado a los datos de Instaladas actuales
+                        grid: { color: 'rgba(255, 255, 255, 0.08)', drawBorder: false },
+                        ticks: { color: '#bbbbbb', font: { size: 14 }, stepSize: 2 }
                     },
                     y: {
                         grid: { display: false },
-                        ticks: { color: coloresTextoY, font: { size: 17, weight: 'bold' }, padding: 15 }
+                        ticks: { color: coloresTextoY, font: { size: 15, weight: 'bold' }, padding: 15 }
                     }
                 }
             }

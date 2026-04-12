@@ -16,6 +16,7 @@
             overflow-x: hidden;
         }
 
+        /* Video de fondo a pantalla completa */
         .video-fondo {
             position: fixed;
             right: 0;
@@ -28,43 +29,47 @@
             object-fit: cover;
         }
 
+        /* Capa de oscuridad para resaltar el neón */
         .overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7); /* Oscurecí un 10% más el fondo para que el neón resalte más */
+            background: rgba(0, 0, 0, 0.7);
             z-index: -1;
         }
 
+        /* Contenedor de Cristal */
         .container {
-            width: 85%;
-            max-width: 1200px;
+            width: 90%;
+            max-width: 1300px;
             background: rgba(20, 20, 25, 0.4);
             padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            border-radius: 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(15px);
             z-index: 1;
         }
 
+        /* Espacio para los 20 asesores (Ajustado a 1000px de altura mínima) */
         .chart-wrapper {
             position: relative;
-            height: 70vh; 
-            min-height: 750px; 
+            height: 80vh; 
+            min-height: 1000px; 
             width: 100%;
         }
 
-        /* EL TRUCO CSS: Este filtro hace que todo lo que se dibuje en el canvas emita luz */
+        /* Efecto de resplandor neón en todo el gráfico */
         #rankingVentas {
-            filter: drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.3));
+            filter: drop-shadow(0px 0px 10px rgba(255, 255, 255, 0.2));
         }
 
+        /* Animación del Título Principal */
         @keyframes flotarYBrillar {
             0% { transform: translateY(0px); text-shadow: 0 0 10px #FFD700; }
-            50% { transform: translateY(-8px); text-shadow: 0 0 25px #FFD700, 0 0 15px #FFF; }
+            50% { transform: translateY(-10px); text-shadow: 0 0 30px #FFD700, 0 0 15px #FFF; }
             100% { transform: translateY(0px); text-shadow: 0 0 10px #FFD700; }
         }
 
@@ -72,9 +77,9 @@
             color: #FFD700; 
             text-align: center; 
             z-index: 1; 
-            font-size: 3em;
-            letter-spacing: 2px;
-            margin-bottom: 40px;
+            font-size: 3.5em;
+            letter-spacing: 3px;
+            margin-bottom: 50px;
             animation: flotarYBrillar 3s ease-in-out infinite;
         }
     </style>
@@ -98,15 +103,23 @@
     <script>
         const ctx = document.getElementById('rankingVentas').getContext('2d');
         
-        const nombres = ['VALERIA V', 'FABIAN', 'EVA', 'VALERIA M', 'JOMAJAIRA', 'ROMINA', 'JOSEPH','DIEGO','BRIANNA','ALVARO','FRANKI','ALBERT','KENNY','KIMBERLY','ISABELLE','HENRY','LEONARDO C','LEONARDO Y','ARMANDO','PEDRO'];
-        const ventas = [32, 28, 26, 22, 20, 19, 15, 14, 12, 10, 8, 7, 5, 2, 3, 4, 5, 6, 1, 2]; 
+        // --- SECCIÓN DE DATOS (Aquí actualizas nombres y ventas) ---
+        const nombres = [
+            'VALERIA V', 'FABIAN', 'EVA', 'VALERIA M', 'JOMAJAIRA', 
+            'ROMINA', 'JOSEPH', 'DIEGO', 'BRIANNA', 'ALVARO', 
+            'FRANKI', 'ALBERT', 'KENNY', 'KIMBERLY', 'ISABELLE', 
+            'HENRY', 'LEONARDO C', 'LEONARDO Y', 'ARMANDO', 'PEDRO'
+        ];
+        
+        // Ventas actuales (Escala de 0 a 30+)
+        const ventas = [32, 28, 26, 22, 21, 19, 15, 14, 12, 10, 9, 8, 5, 4, 3, 2, 5, 6, 1, 2]; 
 
-        // Colores de las barras
+        // --- LÓGICA DE ESCALAS Y COLORES NEÓN ---
         const coloresFondo = ventas.map(v => {
-            if (v >= 30) return 'rgba(255, 215, 0, 0.8)';   // Oro
-            if (v >= 25) return 'rgba(0, 255, 127, 0.8)';   // Verde Neón
-            if (v >= 20) return 'rgba(0, 191, 255, 0.8)';   // Azul Neón
-            return 'rgba(138, 43, 226, 0.6)';               // Morado
+            if (v >= 30) return 'rgba(255, 215, 0, 0.8)';   // ORO (Objetivo 3)
+            if (v >= 25) return 'rgba(0, 255, 127, 0.8)';   // VERDE (Objetivo 2)
+            if (v >= 20) return 'rgba(0, 191, 255, 0.8)';   // AZUL (Objetivo 1)
+            return 'rgba(138, 43, 226, 0.6)';               // MORADO (En camino)
         });
 
         const coloresBorde = ventas.map(v => {
@@ -116,12 +129,12 @@
             return '#8A2BE2';
         });
 
-        // NUEVO: Colores de los NOMBRES (Textos más brillantes que el fondo)
-        const coloresTexto = ventas.map(v => {
-            if (v >= 30) return '#FFD700'; // Oro Brillante
-            if (v >= 25) return '#00FF7F'; // Verde Neón Brillante
-            if (v >= 20) return '#00BFFF'; // Azul Neón Brillante
-            return '#E066FF';              // Morado Brillante claro
+        // Colores Neón para los Nombres (Eje Y)
+        const coloresTextoY = ventas.map(v => {
+            if (v >= 30) return '#FFD700';
+            if (v >= 25) return '#00FF7F';
+            if (v >= 20) return '#00BFFF';
+            return '#E066FF';
         });
 
         Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
@@ -138,20 +151,19 @@
                     backgroundColor: coloresFondo,
                     borderColor: coloresBorde,
                     borderWidth: 2,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     borderSkipped: false,
-                    barPercentage: 0.6
+                    barPercentage: 0.7
                 }]
             },
             options: {
                 indexAxis: 'y', 
                 responsive: true,
-                maintainAspectRatio: false, 
+                maintainAspectRatio: false,
                 
+                // Animación en Cascada (Staggered Load)
                 animation: {
-                    onComplete: () => {
-                        delayed = true;
-                    },
+                    onComplete: () => { delayed = true; },
                     delay: (context) => {
                         let delay = 0;
                         if (context.type === 'data' && context.mode === 'default' && !delayed) {
@@ -163,23 +175,26 @@
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleFont: { size: 16 },
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                        titleFont: { size: 16, weight: 'bold' },
                         bodyFont: { size: 14 },
-                        padding: 12,
-                        displayColors: false
+                        padding: 15,
+                        displayColors: false,
+                        callbacks: {
+                            label: (context) => ` Logro: ${context.raw} ventas`
+                        }
                     }
                 },
                 scales: {
                     x: {
                         beginAtZero: true,
-                        max: 35, 
+                        max: 35, // Escala máxima para que el 30 sea casi el final
                         grid: { 
-                            color: 'rgba(255, 255, 255, 0.1)', 
+                            color: 'rgba(255, 255, 255, 0.08)',
                             drawBorder: false
                         },
                         ticks: { 
-                            color: '#aaaaaa',
+                            color: '#bbbbbb',
                             font: { size: 14 },
                             stepSize: 5 
                         }
@@ -187,9 +202,9 @@
                     y: {
                         grid: { display: false },
                         ticks: { 
-                            // AQUÍ ASIGNAMOS LOS COLORES NEÓN A LOS NOMBRES
-                            color: coloresTexto, 
-                            font: { size: 16, weight: 'bold' } 
+                            color: coloresTextoY, // Aplicamos los colores neón dinámicos
+                            font: { size: 17, weight: 'bold' },
+                            padding: 15
                         }
                     }
                 }

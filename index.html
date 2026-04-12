@@ -16,7 +16,6 @@
             overflow-x: hidden;
         }
 
-        /* Video de fondo a pantalla completa */
         .video-fondo {
             position: fixed;
             right: 0;
@@ -29,7 +28,6 @@
             object-fit: cover;
         }
 
-        /* Filtro oscuro para resaltar el brillo neón */
         .overlay {
             position: fixed;
             top: 0;
@@ -40,7 +38,6 @@
             z-index: -1;
         }
 
-        /* Contenedor de Cristal */
         .container {
             width: 90%;
             max-width: 1300px;
@@ -51,9 +48,11 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(15px);
             z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        /* Altura calculada para 20 asesores sin que se aplasten */
         .chart-wrapper {
             position: relative;
             height: 80vh; 
@@ -61,12 +60,10 @@
             width: 100%;
         }
 
-        /* Efecto Neón Global al lienzo */
         #rankingVentas {
             filter: drop-shadow(0px 0px 10px rgba(255, 255, 255, 0.25));
         }
 
-        /* Animación del Título */
         @keyframes flotarYBrillar {
             0% { transform: translateY(0px); text-shadow: 0 0 10px #FFD700; }
             50% { transform: translateY(-10px); text-shadow: 0 0 30px #FFD700, 0 0 15px #FFF; }
@@ -79,9 +76,111 @@
             z-index: 1; 
             font-size: 3.5em;
             letter-spacing: 3px;
-            margin-bottom: 50px;
+            margin-bottom: 30px;
             animation: flotarYBrillar 3s ease-in-out infinite;
         }
+
+        .btn-estadisticas {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: white;
+            background: rgba(0, 191, 255, 0.2);
+            border: 2px solid #00BFFF;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 15px rgba(0, 191, 255, 0.4);
+        }
+
+        .btn-estadisticas:hover {
+            background: #00BFFF;
+            box-shadow: 0 0 30px rgba(0, 191, 255, 0.8);
+            transform: scale(1.05);
+        }
+
+        #modalStats {
+            display: none; 
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        #modalStats.mostrar {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-contenido {
+            background: rgba(30, 30, 40, 0.6);
+            padding: 50px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0, 255, 127, 0.2);
+            position: relative;
+        }
+
+        .modal-titulo {
+            color: #00FF7F;
+            font-size: 2.5em;
+            margin-top: 0;
+            margin-bottom: 40px;
+            text-shadow: 0 0 20px #00FF7F;
+        }
+
+        .stats-grid {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+        }
+
+        .stat-card {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 180px;
+        }
+
+        .stat-valor {
+            font-size: 4em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            font-size: 1.2em;
+            color: #bbbbbb;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .color-ingresadas { color: #00BFFF; text-shadow: 0 0 20px #00BFFF; }
+        .color-caidas { color: #FF4500; text-shadow: 0 0 20px #FF4500; }
+        .color-cobertura { color: #FFD700; text-shadow: 0 0 20px #FFD700; }
+
+        .btn-cerrar {
+            position: absolute;
+            top: 20px; right: 30px;
+            font-size: 2em;
+            color: white;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .btn-cerrar:hover { color: #FF4500; }
+
     </style>
 </head>
 <body>
@@ -98,41 +197,81 @@
         <div class="chart-wrapper">
             <canvas id="rankingVentas"></canvas>
         </div>
+        <button id="btnAbrirStats" class="btn-estadisticas">📊 Rendimiento Global</button>
+    </div>
+
+    <div id="modalStats">
+        <div class="modal-contenido">
+            <span id="btnCerrarStats" class="btn-cerrar">✖</span>
+            <h2 class="modal-titulo">RENDIMIENTO GLOBAL DEL EQUIPO</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Ingresadas</div>
+                    <div id="valIngresadas" class="stat-valor color-ingresadas">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Caídas</div>
+                    <div id="valCaidas" class="stat-valor color-caidas">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Cobertibilidad</div>
+                    <div id="valCobertura" class="stat-valor color-cobertura">0%</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         const ctx = document.getElementById('rankingVentas').getContext('2d');
         
-        // --- 1. BASE DE DATOS DEL EQUIPO ---
-        // Aquí ingresas a tu gente. No importa el orden, el sistema los ordenará solos.
+        // --- 1. BASE DE DATOS DETALLADA POR ASESOR ---
+        // Ahora ingresas las 'ventas' (aprobadas) y las 'caidas' individualmente
         const asesoresBase = [
-            { nombre: 'VALERIA V', ventas: 14 },
-            { nombre: 'FABIAN', ventas: 10 },
-            { nombre: 'EVA', ventas: 26 },
-            { nombre: 'VALERIA M', ventas: 22 },
-            { nombre: 'JOMAJAIRA', ventas: 21 },
-            { nombre: 'ROMINA', ventas: 19 },
-            { nombre: 'JOSEPH', ventas: 15 },
-            { nombre: 'DIEGO', ventas: 14 },
-            { nombre: 'BRIANNA', ventas: 12 },
-            { nombre: 'ALVARO', ventas: 10 },
-            { nombre: 'FRANKI', ventas: 9 },
-            { nombre: 'ALBERT', ventas: 8 },
-            { nombre: 'KENNY', ventas: 5 },
-            { nombre: 'KIMBERLY', ventas: 4 },
-            { nombre: 'ISABELLE', ventas: 3 },
-            { nombre: 'HENRY', ventas: 2 },
-            { nombre: 'LEONARDO C', ventas: 5 },
-            { nombre: 'LEONARDO Y', ventas: 6 },
-            { nombre: 'ARMANDO', ventas: 1 },
-            { nombre: 'PEDRO', ventas: 2 }
+            { nombre: 'VALERIA V', ventas: 32, caidas: 4 },
+            { nombre: 'FABIAN', ventas: 28, caidas: 6 },
+            { nombre: 'EVA', ventas: 26, caidas: 2 },
+            { nombre: 'VALERIA M', ventas: 22, caidas: 5 },
+            { nombre: 'JOMAJAIRA', ventas: 21, caidas: 3 },
+            { nombre: 'ROMINA', ventas: 19, caidas: 8 },
+            { nombre: 'JOSEPH', ventas: 15, caidas: 1 },
+            { nombre: 'DIEGO', ventas: 14, caidas: 2 },
+            { nombre: 'BRIANNA', ventas: 12, caidas: 4 },
+            { nombre: 'ALVARO', ventas: 10, caidas: 0 },
+            { nombre: 'FRANKI', ventas: 9, caidas: 1 },
+            { nombre: 'ALBERT', ventas: 8, caidas: 2 },
+            { nombre: 'KENNY', ventas: 5, caidas: 0 },
+            { nombre: 'KIMBERLY', ventas: 4, caidas: 3 },
+            { nombre: 'ISABELLE', ventas: 3, caidas: 1 },
+            { nombre: 'HENRY', ventas: 2, caidas: 0 },
+            { nombre: 'LEONARDO C', ventas: 5, caidas: 2 },
+            { nombre: 'LEONARDO Y', ventas: 6, caidas: 1 },
+            { nombre: 'ARMANDO', ventas: 1, caidas: 4 },
+            { nombre: 'PEDRO', ventas: 2, caidas: 1 }
         ];
 
-        // --- 2. MOTOR DE ORDENAMIENTO AUTOMÁTICO ---
-        // Ordena de mayor a menor ventas
+        // --- 2. CÁLCULOS GLOBALES AUTOMÁTICOS ---
+        const totalAprobadas = asesoresBase.reduce((suma, as) => suma + as.ventas, 0);
+        const totalCaidas = asesoresBase.reduce((suma, as) => suma + as.caidas, 0);
+        const totalIngresadas = totalAprobadas + totalCaidas;
+        
+        let cobertibilidadGlobal = 0;
+        if (totalIngresadas > 0) {
+            cobertibilidadGlobal = ((totalAprobadas / totalIngresadas) * 100).toFixed(1);
+        }
+
+        // Insertar los cálculos en el panel HTML
+        document.getElementById('valIngresadas').innerText = totalIngresadas;
+        document.getElementById('valCaidas').innerText = totalCaidas;
+        document.getElementById('valCobertura').innerText = cobertibilidadGlobal + '%';
+
+        // Gestión del Modal
+        const modal = document.getElementById('modalStats');
+        document.getElementById('btnAbrirStats').addEventListener('click', () => modal.classList.add('mostrar'));
+        document.getElementById('btnCerrarStats').addEventListener('click', () => modal.classList.remove('mostrar'));
+
+        // --- 3. MOTOR DE ORDENAMIENTO (Por Ventas Aprobadas) ---
         asesoresBase.sort((a, b) => b.ventas - a.ventas);
 
-        // --- 3. ASIGNACIÓN DE INSIGNIAS Y EXTRACCIÓN DE DATOS ---
         const nombresConInsignia = asesoresBase.map((as, index) => {
             if (index === 0) return '👑 ' + as.nombre;
             if (index === 1) return '🥈 ' + as.nombre;
@@ -142,12 +281,12 @@
 
         const ventasOrdenadas = asesoresBase.map(as => as.ventas);
 
-        // --- 4. LÓGICA DE COLORES NEÓN SEGÚN OBJETIVOS (20, 25, 30) ---
+        // --- 4. COLORES ---
         const coloresFondo = ventasOrdenadas.map(v => {
-            if (v >= 30) return 'rgba(255, 215, 0, 0.8)';   // ORO 
-            if (v >= 25) return 'rgba(0, 255, 127, 0.8)';   // VERDE 
-            if (v >= 20) return 'rgba(0, 191, 255, 0.8)';   // AZUL 
-            return 'rgba(138, 43, 226, 0.6)';               // MORADO 
+            if (v >= 30) return 'rgba(255, 215, 0, 0.8)';   // ORO
+            if (v >= 25) return 'rgba(0, 255, 127, 0.8)';   // VERDE
+            if (v >= 20) return 'rgba(0, 191, 255, 0.8)';   // AZUL
+            return 'rgba(138, 43, 226, 0.6)';               // MORADO
         });
 
         const coloresBorde = ventasOrdenadas.map(v => {
@@ -188,8 +327,6 @@
                 indexAxis: 'y', 
                 responsive: true,
                 maintainAspectRatio: false,
-                
-                // Animación en cascada fluida
                 animation: {
                     onComplete: () => { delayed = true; },
                     delay: (context) => {
@@ -203,37 +340,45 @@
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                        titleFont: { size: 16, weight: 'bold' },
-                        bodyFont: { size: 14 },
+                        backgroundColor: 'rgba(0, 0, 0, 0.95)',
+                        titleFont: { size: 18, weight: 'bold' },
+                        bodyFont: { size: 15 },
                         padding: 15,
                         displayColors: false,
+                        // --- ESTADÍSTICAS INDIVIDUALES AL PASAR EL RATÓN ---
                         callbacks: {
-                            label: (context) => ` Logro: ${context.raw} ventas`
+                            label: function(context) {
+                                const index = context.dataIndex;
+                                const aprobadas = asesoresBase[index].ventas;
+                                const caidas = asesoresBase[index].caidas;
+                                const ingresadas = aprobadas + caidas;
+                                let efectividad = 0;
+                                if (ingresadas > 0) {
+                                    efectividad = ((aprobadas / ingresadas) * 100).toFixed(1);
+                                }
+                                
+                                return [
+                                    ` ✅ Aprobadas: ${aprobadas}`,
+                                    ` ❌ Caídas: ${caidas}`,
+                                    ` 📊 Efectividad: ${efectividad}%`
+                                ];
+                            }
                         }
                     }
                 },
                 scales: {
                     x: {
                         beginAtZero: true,
-                        max: 35, // El techo es 35 para que 30 (Oro) se vea gigante
+                        max: 35, 
                         grid: { 
                             color: 'rgba(255, 255, 255, 0.08)',
                             drawBorder: false
                         },
-                        ticks: { 
-                            color: '#bbbbbb',
-                            font: { size: 14 },
-                            stepSize: 5 
-                        }
+                        ticks: { color: '#bbbbbb', font: { size: 14 }, stepSize: 5 }
                     },
                     y: {
                         grid: { display: false },
-                        ticks: { 
-                            color: coloresTextoY, 
-                            font: { size: 17, weight: 'bold' },
-                            padding: 15
-                        }
+                        ticks: { color: coloresTextoY, font: { size: 17, weight: 'bold' }, padding: 15 }
                     }
                 }
             }

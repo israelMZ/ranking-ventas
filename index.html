@@ -73,7 +73,6 @@
         .col-naranja { background: rgba(255, 140, 0, 0.15); color: #FFB04F; } 
         .col-rojo { background: rgba(255, 69, 0, 0.15); color: #FF6347; }    
         .col-azul { background: rgba(0, 191, 255, 0.15); color: #00BFFF; }   
-        .col-amarillo { background: rgba(255, 215, 0, 0.15); color: #FFD700; } 
         .col-verde { background: rgba(50, 205, 50, 0.15); color: #32CD32; }  
         .border-right { border-right: 1px solid rgba(255,255,255,0.1); }
     </style>
@@ -122,63 +121,72 @@
                             <th class="col-asesor border-right">ASESOR</th>
                             <th class="col-naranja border-right">INGRESOS</th>
                             <th class="col-rojo">CANC. CLIENTE</th>
-                            <th class="col-rojo border-right">CANC. WOW</th>
-                            <th class="col-azul border-right">PROGRAMA</th>
-                            <th class="col-amarillo border-right">PENDIENTE</th>
+                            <th class="col-rojo border-right">CANC. OP</th>
+                            <th class="col-azul border-right">PROGRAMADA</th>
                             <th class="col-verde border-right">INSTALADAS</th>
                             <th class="col-naranja border-right">TOTAL</th>
                             <th class="col-naranja">CONVERTIBILIDAD</th>
                         </tr>
                     </thead>
                     <tbody id="cuerpoTabla">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
     </div>
 
     <script>
-        // ==============================================================================
-        // 🚀 AQUÍ ESTÁ TU ENLACE EN VIVO DE GOOGLE SHEETS
-        // ==============================================================================
         const URL_SHEET = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTfvuQqIcH6Zv8rqvsqeolWoX7Z3lIKZqz2nX-Q0aCRBZcPRvXAXz8rjKyoAZ-OmiI9GfpNkMjK9Uht/pub?output=csv';
 
-        // Variables globales para el gráfico
         let miGrafico = null;
 
         async function cargarDatos() {
             try {
-                // 1. Conectarse a Google Sheets
                 const respuesta = await fetch(URL_SHEET);
                 const dataRaw = await respuesta.text();
                 
-                // 2. Convertir el CSV en datos de JavaScript
-                const filas = dataRaw.split('\n').slice(1); // Ignora la cabecera
-                const asesores = filas.map(linea => {
-                    const c = linea.replace(/\r/g, '').split(','); // Limpia y separa por comas
-                    if(c.length < 7 || c[0].trim() === '') return null; // Evita filas vacías
-                    return {
-                        nombre: c[0].trim(),
-                        ingresos: parseInt(c[1]) || 0,
-                        cancCliente: parseInt(c[2]) || 0,
-                        cancWow: parseInt(c[3]) || 0,
-                        programa: parseInt(c[4]) || 0,
-                        pendiente: parseInt(c[5]) || 0,
-                        instaladas: parseInt(c[6]) || 0
-                    };
-                }).filter(a => a !== null);
+                const filas = dataRaw.split('\n').slice(1); 
+                
+                // --- LÓGICA ANTI-DUPLICADOS ---
+                let asesoresUnicos = [];
 
-                // 3. Ordenar por instaladas de mayor a menor
-                asesores.sort((a, b) => b.instaladas - a.instaladas);
+                filas.forEach(linea => {
+                    const c = linea.replace(/\r/g, '').split(','); 
+                    // Verificamos que al menos tenga hasta la columna de Instaladas (índice 5)
+                    if(c.length < 6 || c[0].trim() === '') return; 
+                    
+                    const nombre = c[0].trim();
+                    const ingresos = parseInt(c[1]) || 0;
+                    const cancCliente = parseInt(c[2]) || 0;
+                    const cancOp = parseInt(c[3]) || 0;
+                    const programada = parseInt(c[4]) || 0;
+                    const instaladas = parseInt(c[5]) || 0;
 
-                // 4. Calcular Estadísticas Globales
+                    // Si el asesor ya existe, sumamos sus valores (por si hay duplicados en el Excel)
+                    const asesorExistente = asesoresUnicos.find(a => a.nombre === nombre);
+                    if (asesorExistente) {
+                        asesorExistente.ingresos += ingresos;
+                        asesorExistente.cancCliente += cancCliente;
+                        asesorExistente.cancOp += cancOp;
+                        asesorExistente.programada += programada;
+                        asesorExistente.instaladas += instaladas;
+                    } else {
+                        // Si no existe, lo agregamos como nuevo
+                        asesoresUnicos.push({ nombre, ingresos, cancCliente, cancOp, programada, instaladas });
+                    }
+                });
+
+                // Ordenar por instaladas de mayor a menor
+                asesoresUnicos.sort((a, b) => b.instaladas - a.instaladas);
+
+                // Calcular Estadísticas Globales
                 let totalIngresosGlobal = 0;
                 let totalCaidasGlobal = 0;
                 let totalInstaladasGlobal = 0;
 
-                asesores.forEach(as => {
+                asesoresUnicos.forEach(as => {
                     totalIngresosGlobal += as.ingresos;
-                    totalCaidasGlobal += (as.cancCliente + as.cancWow);
+                    totalCaidasGlobal += (as.cancCliente + as.cancOp); // Ajustado a Canc OP
                     totalInstaladasGlobal += as.instaladas;
                 });
 
@@ -188,22 +196,22 @@
                 document.getElementById('valCaidas').innerText = totalCaidasGlobal;
                 document.getElementById('valCobertura').innerText = cobGlobal + '%';
 
-                // 5. Ejecutar funciones de dibujo
-                llenarTabla(asesores);
-                dibujarGrafico(asesores);
+                llenarTabla(asesoresUnicos);
+                dibujarGrafico(asesoresUnicos);
 
             } catch (error) {
                 console.error("Error cargando Google Sheets:", error);
-                alert("Error de conexión. Verifica que tengas conexión a internet y el documento siga publicado.");
+                alert("Error de conexión. Verifica el documento en Google Sheets.");
             }
         }
 
-        // --- FUNCIÓN PARA LLENAR LA TABLA ---
+        // --- FUNCIÓN PARA LLENAR LA TABLA (Nuevas Columnas) ---
         function llenarTabla(asesores) {
             const cuerpo = document.getElementById('cuerpoTabla');
             cuerpo.innerHTML = '';
             asesores.forEach(as => {
-                const totalCalculado = as.cancCliente + as.cancWow + as.programa + as.pendiente + as.instaladas;
+                // Cálculo de total según las nuevas columnas
+                const totalCalculado = as.cancCliente + as.cancOp + as.programada + as.instaladas;
                 const convertibilidad = as.ingresos > 0 ? ((as.instaladas / as.ingresos) * 100).toFixed(2) : "0.00";
                 
                 cuerpo.innerHTML += `
@@ -211,9 +219,8 @@
                         <td class="col-asesor border-right">${as.nombre}</td>
                         <td class="col-naranja border-right">${as.ingresos}</td>
                         <td class="col-rojo">${as.cancCliente}</td>
-                        <td class="col-rojo border-right">${as.cancWow}</td>
-                        <td class="col-azul border-right">${as.programa}</td>
-                        <td class="col-amarillo border-right">${as.pendiente}</td>
+                        <td class="col-rojo border-right">${as.cancOp}</td>
+                        <td class="col-azul border-right">${as.programada}</td>
                         <td class="col-verde border-right">${as.instaladas}</td>
                         <td class="col-naranja border-right">${totalCalculado}</td>
                         <td class="col-naranja">${convertibilidad} %</td>
@@ -225,7 +232,6 @@
         function dibujarGrafico(asesores) {
             const ctx = document.getElementById('rankingVentas').getContext('2d');
             
-            // Asignar Coronas y Medallas
             const nombresInsignia = asesores.map((as, i) => {
                 if (i === 0) return '👑 ' + as.nombre;
                 if (i === 1) return '🥈 ' + as.nombre;
@@ -235,7 +241,7 @@
 
             const ventas = asesores.map(as => as.instaladas);
 
-            // Escala de colores (10 Oro, 7 Verde, 4 Azul) adaptada a "Instaladas"
+            // Escala adaptada
             const colores = ventas.map(v => v >= 10 ? 'rgba(255, 215, 0, 0.8)' : v >= 7 ? 'rgba(0, 255, 127, 0.8)' : v >= 4 ? 'rgba(0, 191, 255, 0.8)' : 'rgba(138, 43, 226, 0.6)');
             const bordes = ventas.map(v => v >= 10 ? '#FFD700' : v >= 7 ? '#00FF7F' : v >= 4 ? '#00BFFF' : '#8A2BE2');
             const coloresTxt = ventas.map(v => v >= 10 ? '#FFD700' : v >= 7 ? '#00FF7F' : v >= 4 ? '#00BFFF' : '#E066FF');
@@ -243,7 +249,6 @@
             Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
             let delayed;
 
-            // Si ya existía un gráfico, lo destruimos para redibujar limpio
             if (miGrafico) { miGrafico.destroy(); }
 
             miGrafico = new Chart(ctx, {
@@ -288,7 +293,7 @@
                         }
                     },
                     scales: {
-                        x: { beginAtZero: true, max: 25, grid: { color: 'rgba(255,255,255,0.08)', drawBorder: false }, ticks: { color: '#bbbbbb', font: { size: 14 }, stepSize: 5 } },
+                        x: { beginAtZero: true, max: 35, grid: { color: 'rgba(255,255,255,0.08)', drawBorder: false }, ticks: { color: '#bbbbbb', font: { size: 14 }, stepSize: 5 } },
                         y: { grid: { display: false }, ticks: { color: coloresTxt, font: { size: 15, weight: 'bold' }, padding: 15 } }
                     }
                 }
@@ -300,7 +305,7 @@
         document.getElementById('btnAbrirStats').addEventListener('click', () => modal.classList.add('mostrar'));
         document.getElementById('btnCerrarStats').addEventListener('click', () => modal.classList.remove('mostrar'));
 
-        // --- INICIAR TODO ---
+        // --- INICIAR ---
         cargarDatos();
     </script>
 </body>

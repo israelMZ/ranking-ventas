@@ -5,33 +5,28 @@
     <title>Ranking de Ventas</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* --- ESTILOS GENERALES Y FONDO DE RESPALDO --- */
-        body { 
-            margin: 0; padding: 40px; color: white; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            display: flex; flex-direction: column; align-items: center; overflow-x: hidden; 
-            background-color: #121212; /* Fondo oscuro por si el video no carga */
-        }
-        
+        /* --- ESTILOS GENERALES Y FONDO --- */
+        body { margin: 0; padding: 40px; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
         .video-fondo { position: fixed; right: 0; bottom: 0; min-width: 100%; min-height: 100%; z-index: -2; object-fit: cover; }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); z-index: -1; }
 
-        /* --- BARRA DE PROGRESO 100% CSS --- */
+        /* --- BARRA DE PROGRESO DE SINCRONIZACIÓN NEÓN --- */
         #syncProgressBarContainer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 4px;
-            background: rgba(255, 255, 255, 0.05); z-index: 9999;
-        }
-
-        @keyframes llenarBarra {
-            0% { width: 0%; opacity: 1; }
-            95% { opacity: 1; }
-            100% { width: 100%; opacity: 0; }
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            z-index: 9999;
         }
 
         #syncProgressBar {
-            height: 100%; width: 0%; background: #00BFFF;
+            height: 100%;
+            width: 0%;
+            background: #00BFFF;
             box-shadow: 0 0 15px #00BFFF, 0 0 5px #00BFFF;
-            animation: llenarBarra 120s linear infinite;
+            transition: width 1s linear; /* Animación fluida de 1 segundo por paso */
         }
 
         /* --- CONTENEDOR PRINCIPAL --- */
@@ -76,6 +71,7 @@
 
         .modal-titulo { color: #00BFFF; font-size: 2em; margin-top: 0; margin-bottom: 10px; text-align: center; text-shadow: 0 0 15px #00BFFF; }
         
+        /* --- ESTILO DE LA FRASE MOTIVACIONAL --- */
         .frase-motivacional {
             color: #FFD700; font-size: 1.2em; font-style: italic; text-align: center; 
             margin-top: 0; margin-bottom: 30px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4); letter-spacing: 1px;
@@ -155,11 +151,14 @@
 
         async function cargarDatos() {
             try {
+                // TRUCO ANTI-CACHÉ
                 const urlConFiltro = URL_SHEET + '&t=' + new Date().getTime();
+                
                 const respuesta = await fetch(urlConFiltro);
                 const dataRaw = await respuesta.text();
                 
                 const filas = dataRaw.split('\n').slice(1); 
+                
                 let asesoresMap = new Map();
 
                 filas.forEach(linea => {
@@ -193,6 +192,8 @@
 
                 llenarTabla(asesoresUnicos);
                 dibujarGrafico(asesoresUnicos);
+
+                console.log("Datos gráficos actualizados: " + new Date().toLocaleTimeString());
 
             } catch (error) {
                 console.error("Error cargando datos:", error);
@@ -236,8 +237,6 @@
             const bordes = ventas.map(v => v >= 10 ? '#FFD700' : v >= 7 ? '#00FF7F' : v >= 4 ? '#00BFFF' : '#8A2BE2');
             const coloresTxt = ventas.map(v => v >= 10 ? '#FFD700' : v >= 7 ? '#00FF7F' : v >= 4 ? '#00BFFF' : '#E066FF');
 
-            Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-            
             if (miGrafico) { 
                 miGrafico.destroy();
             }
@@ -270,4 +269,57 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.95)', titleFont: { size: 18, weight: 'bold' }, bodyFont: { size: 15 }, padding: 1
+                            backgroundColor: 'rgba(0, 0, 0, 0.95)', titleFont: { size: 18, weight: 'bold' }, bodyFont: { size: 15 }, padding: 15, displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    const as = asesores[context.dataIndex];
+                                    const conv = as.ingresos > 0 ? ((as.instaladas / as.ingresos) * 100).toFixed(1) : "0.0";
+                                    return [ ` ✅ Instaladas: ${as.instaladas}`, ` 📥 Ingresadas: ${as.ingresos}`, ` 📊 Convertibilidad: ${conv}%` ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { beginAtZero: true, max: 30, grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#bbbbbb', stepSize: 5 } },
+                        y: { grid: { display: false }, ticks: { color: coloresTxt, font: { weight: 'bold' } } }
+                    }
+                }
+            });
+        }
+
+        const modal = document.getElementById('modalStats');
+        document.getElementById('btnAbrirStats').addEventListener('click', () => modal.classList.add('mostrar'));
+        document.getElementById('btnCerrarStats').addEventListener('click', () => modal.classList.remove('mostrar'));
+
+        // =====================================================================
+        // 🚀 INICIALIZACIÓN, AUTO-REFRESH Y BARRA DE PROGRESO
+        // =====================================================================
+        
+        const INTERVALO_MS = 120000; // 2 minutos
+        const barraProgreso = document.getElementById('syncProgressBar');
+
+        function iniciarCicloSincronizacion() {
+            // Carga los datos inmediatamente
+            cargarDatos();
+            
+            // Reinicia la barra a 0%
+            barraProgreso.style.transition = 'none';
+            barraProgreso.style.width = '0%';
+            
+            // Forzamos un reflow para que el navegador procese el ancho 0%
+            void barraProgreso.offsetWidth;
+            
+            // Iniciamos la animación hacia el 100% que durará exactamente 2 minutos
+            barraProgreso.style.transition = `width ${INTERVALO_MS}ms linear`;
+            barraProgreso.style.width = '100%';
+        }
+
+        // Arrancamos el primer ciclo
+        iniciarCicloSincronizacion();
+
+        // Repetimos el ciclo indefinidamente cada 2 minutos
+        setInterval(iniciarCicloSincronizacion, INTERVALO_MS); 
+
+    </script>
+</body>
+</html>

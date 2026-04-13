@@ -5,28 +5,32 @@
     <title>Ranking de Ventas</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* --- ESTILOS GENERALES Y FONDO --- */
-        body { margin: 0; padding: 40px; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
+        /* --- ESTILOS GENERALES Y FONDO DE RESPALDO --- */
+        body { 
+            margin: 0; padding: 40px; color: white; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            display: flex; flex-direction: column; align-items: center; overflow-x: hidden; 
+            background-color: #121212; /* Fondo oscuro por si el video no carga */
+        }
+        
         .video-fondo { position: fixed; right: 0; bottom: 0; min-width: 100%; min-height: 100%; z-index: -2; object-fit: cover; }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); z-index: -1; }
 
-        /* --- BARRA DE PROGRESO 100% CSS (A PRUEBA DE FALLOS) --- */
+        /* --- BARRA DE PROGRESO 100% CSS --- */
         #syncProgressBarContainer {
             position: fixed; top: 0; left: 0; width: 100%; height: 4px;
             background: rgba(255, 255, 255, 0.05); z-index: 9999;
         }
 
-        /* Creamos la animación infinita de 120 segundos */
         @keyframes llenarBarra {
             0% { width: 0%; opacity: 1; }
             95% { opacity: 1; }
-            100% { width: 100%; opacity: 0; } /* Se desvanece suavemente al llegar al final */
+            100% { width: 100%; opacity: 0; }
         }
 
         #syncProgressBar {
             height: 100%; width: 0%; background: #00BFFF;
             box-shadow: 0 0 15px #00BFFF, 0 0 5px #00BFFF;
-            /* Se ejecuta 120s de forma lineal y repite infinitamente */
             animation: llenarBarra 120s linear infinite;
         }
 
@@ -92,4 +96,178 @@
         .col-rojo { background: rgba(255, 69, 0, 0.15); color: #FF6347; }    
         .col-azul { background: rgba(0, 191, 255, 0.15); color: #00BFFF; }   
         .col-verde { background: rgba(50, 205, 50, 0.15); color: #32CD32; }  
-        .border-right { border
+        .border-right { border-right: 1px solid rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body>
+
+    <video autoplay loop muted playsinline class="video-fondo">
+        <source src="tigre.mp4" type="video/mp4">
+    </video>
+
+    <div id="syncProgressBarContainer">
+        <div id="syncProgressBar"></div>
+    </div>
+
+    <div class="overlay"></div>
+
+    <h1>🏆 RANKING DE VENTAS 🏆</h1>
+    
+    <div class="container">
+        <div class="chart-wrapper">
+            <canvas id="rankingVentas"></canvas>
+        </div>
+        <button id="btnAbrirStats" class="btn-estadisticas">📊 TABLA DE DESGLOSE</button>
+    </div>
+
+    <div id="modalStats">
+        <div class="modal-contenido">
+            <span id="btnCerrarStats" class="btn-cerrar">✖</span>
+            <h2 class="modal-titulo">REPORTE DETALLADO DEL EQUIPO</h2>
+            
+            <p class="frase-motivacional">"Hoy es una oportunidad para ser mejor que el día anterior"</p>
+
+            <div class="contenedor-tabla">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="col-asesor border-right">ASESOR</th>
+                            <th class="col-naranja border-right">INGRESOS</th>
+                            <th class="col-rojo">CANC. CLIENTE</th>
+                            <th class="col-rojo border-right">CANC. OP</th>
+                            <th class="col-azul border-right">PROGRAMADA</th>
+                            <th class="col-verde border-right">INSTALADAS</th>
+                            <th class="col-naranja border-right">TOTAL</th>
+                            <th class="col-naranja">CONVERTIBILIDAD</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoTabla">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const URL_SHEET = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTfvuQqIcH6Zv8rqvsqeolWoX7Z3lIKZqz2nX-Q0aCRBZcPRvXAXz8rjKyoAZ-OmiI9GfpNkMjK9Uht/pub?output=csv';
+
+        let miGrafico = null;
+
+        async function cargarDatos() {
+            try {
+                const urlConFiltro = URL_SHEET + '&t=' + new Date().getTime();
+                const respuesta = await fetch(urlConFiltro);
+                const dataRaw = await respuesta.text();
+                
+                const filas = dataRaw.split('\n').slice(1); 
+                let asesoresMap = new Map();
+
+                filas.forEach(linea => {
+                    const c = linea.replace(/\r/g, '').split(','); 
+                    if(c.length < 6 || c[0].trim() === '' || c[0].trim().toUpperCase() === 'ASESOR') return; 
+                    
+                    const nombre = c[0].trim();
+                    const ingresos = parseInt(c[1]) || 0;
+                    const cancCliente = parseInt(c[2]) || 0;
+                    const cancOp = parseInt(c[3]) || 0;
+                    const programada = parseInt(c[4]) || 0;
+                    const instaladas = parseInt(c[5]) || 0;
+
+                    if (asesoresMap.has(nombre)) {
+                        const asExistente = asesoresMap.get(nombre);
+                        asesoresMap.set(nombre, { 
+                            nombre, 
+                            ingresos: asExistente.ingresos + ingresos, 
+                            cancCliente: asExistente.cancCliente + cancCliente, 
+                            cancOp: asExistente.cancOp + cancOp, 
+                            programada: asExistente.programada + programada, 
+                            instaladas: asExistente.instaladas + instaladas 
+                        });
+                    } else {
+                        asesoresMap.set(nombre, { nombre, ingresos, cancCliente, cancOp, programada, instaladas });
+                    }
+                });
+
+                let asesoresUnicos = Array.from(asesoresMap.values());
+                asesoresUnicos.sort((a, b) => b.instaladas - a.instaladas);
+
+                llenarTabla(asesoresUnicos);
+                dibujarGrafico(asesoresUnicos);
+
+            } catch (error) {
+                console.error("Error cargando datos:", error);
+            }
+        }
+
+        function llenarTabla(asesores) {
+            const cuerpo = document.getElementById('cuerpoTabla');
+            cuerpo.innerHTML = '';
+            asesores.forEach(as => {
+                const totalCalculado = as.cancCliente + as.cancOp + as.programada + as.instaladas;
+                const convertibilidad = as.ingresos > 0 ? ((as.instaladas / as.ingresos) * 100).toFixed(2) : "0.00";
+                
+                cuerpo.innerHTML += `
+                    <tr>
+                        <td class="col-asesor border-right">${as.nombre}</td>
+                        <td class="col-naranja border-right">${as.ingresos}</td>
+                        <td class="col-rojo">${as.cancCliente}</td>
+                        <td class="col-rojo border-right">${as.cancOp}</td>
+                        <td class="col-azul border-right">${as.programada}</td>
+                        <td class="col-verde border-right">${as.instaladas}</td>
+                        <td class="col-naranja border-right">${totalCalculado}</td>
+                        <td class="col-naranja">${convertibilidad} %</td>
+                    </tr>`;
+            });
+        }
+
+        function dibujarGrafico(asesores) {
+            const ctx = document.getElementById('rankingVentas').getContext('2d');
+            
+            const nombresInsignia = asesores.map((as, i) => {
+                if (i === 0) return '👑 ' + as.nombre;
+                if (i === 1) return '🥈 ' + as.nombre;
+                if (i === 2) return '🥉 ' + as.nombre;
+                return as.nombre;
+            });
+
+            const ventas = asesores.map(as => as.instaladas);
+
+            const colores = ventas.map(v => v >= 10 ? 'rgba(255, 215, 0, 0.8)' : v >= 7 ? 'rgba(0, 255, 127, 0.8)' : v >= 4 ? 'rgba(0, 191, 255, 0.8)' : 'rgba(138, 43, 226, 0.6)');
+            const bordes = ventas.map(v => v >= 10 ? '#FFD700' : v >= 7 ? '#00FF7F' : v >= 4 ? '#00BFFF' : '#8A2BE2');
+            const coloresTxt = ventas.map(v => v >= 10 ? '#FFD700' : v >= 7 ? '#00FF7F' : v >= 4 ? '#00BFFF' : '#E066FF');
+
+            Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+            
+            if (miGrafico) { 
+                miGrafico.destroy();
+            }
+
+            let delayed;
+            miGrafico = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: nombresInsignia,
+                    datasets: [{
+                        label: 'Ventas Instaladas',
+                        data: ventas,
+                        backgroundColor: colores,
+                        borderColor: bordes,
+                        borderWidth: 2,
+                        borderRadius: 10,
+                        barPercentage: 0.7
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    animation: {
+                        onComplete: () => { delayed = true; },
+                        delay: (context) => {
+                            let delay = 0;
+                            if (context.type === 'data' && context.mode === 'default' && !delayed) { delay = context.dataIndex * 150; }
+                            return delay;
+                        },
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.95)', titleFont: { size: 18, weight: 'bold' }, bodyFont: { size: 15 }, padding: 1

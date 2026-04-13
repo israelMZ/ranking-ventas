@@ -128,7 +128,7 @@
 
         async function cargarDatos() {
             try {
-                // TRUCO ANTI-CACHÉ: Agregamos un número único (timestamp) al final de la URL
+                // TRUCO ANTI-CACHÉ
                 const urlConFiltro = URL_SHEET + '&t=' + new Date().getTime();
                 
                 const respuesta = await fetch(urlConFiltro);
@@ -149,7 +149,6 @@
                     const programada = parseInt(c[4]) || 0;
                     const instaladas = parseInt(c[5]) || 0;
 
-                    // Lógica de suma para que los números sean exactos
                     if (asesoresMap.has(nombre)) {
                         const asExistente = asesoresMap.get(nombre);
                         asesoresMap.set(nombre, { 
@@ -171,7 +170,7 @@
                 llenarTabla(asesoresUnicos);
                 dibujarGrafico(asesoresUnicos);
 
-                console.log("Datos actualizados a las: " + new Date().toLocaleTimeString());
+                console.log("Datos gráficos actualizados: " + new Date().toLocaleTimeString());
 
             } catch (error) {
                 console.error("Error cargando datos:", error);
@@ -215,50 +214,57 @@
             const bordes = ventas.map(v => v >= 10 ? '#FFD700' : v >= 7 ? '#00FF7F' : v >= 4 ? '#00BFFF' : '#8A2BE2');
             const coloresTxt = ventas.map(v => v >= 10 ? '#FFD700' : v >= 7 ? '#00FF7F' : v >= 4 ? '#00BFFF' : '#E066FF');
 
+            Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+            
+            // LA SOLUCIÓN: DESTRUIR Y RECONSTRUIR SIEMPRE
             if (miGrafico) { 
-                miGrafico.data.labels = nombresInsignia;
-                miGrafico.data.datasets[0].data = ventas;
-                miGrafico.data.datasets[0].backgroundColor = colores;
-                miGrafico.data.datasets[0].borderColor = bordes;
-                miGrafico.options.scales.y.ticks.color = coloresTxt;
-                miGrafico.update();
-            } else {
-                miGrafico = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: nombresInsignia,
-                        datasets: [{
-                            label: 'Ventas Instaladas',
-                            data: ventas,
-                            backgroundColor: colores,
-                            borderColor: bordes,
-                            borderWidth: 2,
-                            borderRadius: 10,
-                            barPercentage: 0.7
-                        }]
+                miGrafico.destroy();
+            }
+
+            let delayed;
+            miGrafico = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: nombresInsignia,
+                    datasets: [{
+                        label: 'Ventas Instaladas',
+                        data: ventas,
+                        backgroundColor: colores,
+                        borderColor: bordes,
+                        borderWidth: 2,
+                        borderRadius: 10,
+                        barPercentage: 0.7
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    animation: {
+                        onComplete: () => { delayed = true; },
+                        delay: (context) => {
+                            let delay = 0;
+                            if (context.type === 'data' && context.mode === 'default' && !delayed) { delay = context.dataIndex * 150; }
+                            return delay;
+                        },
                     },
-                    options: {
-                        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: 'rgba(0, 0, 0, 0.95)', titleFont: { size: 18, weight: 'bold' }, bodyFont: { size: 15 }, padding: 15, displayColors: false,
-                                callbacks: {
-                                    label: function(context) {
-                                        const as = asesores[context.dataIndex];
-                                        const conv = as.ingresos > 0 ? ((as.instaladas / as.ingresos) * 100).toFixed(1) : "0.0";
-                                        return [ ` ✅ Instaladas: ${as.instaladas}`, ` 📥 Ingresadas: ${as.ingresos}`, ` 📊 Convertibilidad: ${conv}%` ];
-                                    }
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.95)', titleFont: { size: 18, weight: 'bold' }, bodyFont: { size: 15 }, padding: 15, displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    const as = asesores[context.dataIndex];
+                                    const conv = as.ingresos > 0 ? ((as.instaladas / as.ingresos) * 100).toFixed(1) : "0.0";
+                                    return [ ` ✅ Instaladas: ${as.instaladas}`, ` 📥 Ingresadas: ${as.ingresos}`, ` 📊 Convertibilidad: ${conv}%` ];
                                 }
                             }
-                        },
-                        scales: {
-                            x: { beginAtZero: true, max: 30, grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#bbbbbb', stepSize: 5 } },
-                            y: { grid: { display: false }, ticks: { color: coloresTxt, font: { weight: 'bold' } } }
                         }
+                    },
+                    scales: {
+                        x: { beginAtZero: true, max: 30, grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#bbbbbb', stepSize: 5 } },
+                        y: { grid: { display: false }, ticks: { color: coloresTxt, font: { weight: 'bold' } } }
                     }
-                });
-            }
+                }
+            });
         }
 
         const modal = document.getElementById('modalStats');

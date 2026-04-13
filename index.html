@@ -36,7 +36,7 @@
         }
         .btn-estadisticas:hover { background: #00BFFF; box-shadow: 0 0 30px rgba(0, 191, 255, 0.8); transform: scale(1.05); }
 
-        /* --- PANEL MODAL Y TARJETAS GLOBALES --- */
+        /* --- PANEL MODAL --- */
         #modalStats {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(20px); z-index: 999;
@@ -50,17 +50,9 @@
             box-shadow: 0 0 50px rgba(0, 191, 255, 0.2);
         }
 
-        .modal-titulo { color: #00BFFF; font-size: 2em; margin-top: 0; margin-bottom: 20px; text-align: center; text-shadow: 0 0 15px #00BFFF; }
+        .modal-titulo { color: #00BFFF; font-size: 2em; margin-top: 0; margin-bottom: 30px; text-align: center; text-shadow: 0 0 15px #00BFFF; }
         .btn-cerrar { position: absolute; top: 20px; right: 30px; font-size: 2em; color: white; cursor: pointer; transition: color 0.3s ease; }
         .btn-cerrar:hover { color: #FF4500; }
-
-        .stats-grid { display: flex; gap: 20px; justify-content: center; margin-bottom: 30px; flex-wrap: wrap; }
-        .stat-card { background: rgba(0, 0, 0, 0.5); padding: 20px 30px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); min-width: 150px; text-align: center; }
-        .stat-valor { font-size: 3em; font-weight: bold; margin: 5px 0; }
-        .stat-label { font-size: 1em; color: #bbbbbb; text-transform: uppercase; letter-spacing: 1px; }
-        .color-ingresadas { color: #00BFFF; text-shadow: 0 0 20px #00BFFF; }
-        .color-caidas { color: #FF4500; text-shadow: 0 0 20px #FF4500; }
-        .color-cobertura { color: #FFD700; text-shadow: 0 0 20px #FFD700; }
 
         /* --- TABLA EXCEL NEÓN --- */
         .contenedor-tabla { overflow-x: auto; overflow-y: auto; flex-grow: 1; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
@@ -98,21 +90,6 @@
         <div class="modal-contenido">
             <span id="btnCerrarStats" class="btn-cerrar">✖</span>
             <h2 class="modal-titulo">REPORTE DETALLADO DEL EQUIPO WOW</h2>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-label">Total Ingresadas</div>
-                    <div id="valIngresadas" class="stat-valor color-ingresadas">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Total Caídas</div>
-                    <div id="valCaidas" class="stat-valor color-caidas">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Cobertibilidad</div>
-                    <div id="valCobertura" class="stat-valor color-cobertura">0%</div>
-                </div>
-            </div>
 
             <div class="contenedor-tabla">
                 <table>
@@ -147,13 +124,13 @@
                 
                 const filas = dataRaw.split('\n').slice(1); 
                 
-                // --- LÓGICA ANTI-DUPLICADOS ---
-                let asesoresUnicos = [];
+                // LÓGICA ANTI-DUPLICADOS
+                let asesoresMap = new Map();
 
                 filas.forEach(linea => {
                     const c = linea.replace(/\r/g, '').split(','); 
-                    // Verificamos que al menos tenga hasta la columna de Instaladas (índice 5)
-                    if(c.length < 6 || c[0].trim() === '') return; 
+                    
+                    if(c.length < 6 || c[0].trim() === '' || c[0].trim().toUpperCase() === 'ASESOR') return; 
                     
                     const nombre = c[0].trim();
                     const ingresos = parseInt(c[1]) || 0;
@@ -162,39 +139,13 @@
                     const programada = parseInt(c[4]) || 0;
                     const instaladas = parseInt(c[5]) || 0;
 
-                    // Si el asesor ya existe, sumamos sus valores (por si hay duplicados en el Excel)
-                    const asesorExistente = asesoresUnicos.find(a => a.nombre === nombre);
-                    if (asesorExistente) {
-                        asesorExistente.ingresos += ingresos;
-                        asesorExistente.cancCliente += cancCliente;
-                        asesorExistente.cancOp += cancOp;
-                        asesorExistente.programada += programada;
-                        asesorExistente.instaladas += instaladas;
-                    } else {
-                        // Si no existe, lo agregamos como nuevo
-                        asesoresUnicos.push({ nombre, ingresos, cancCliente, cancOp, programada, instaladas });
-                    }
+                    asesoresMap.set(nombre, { nombre, ingresos, cancCliente, cancOp, programada, instaladas });
                 });
+
+                let asesoresUnicos = Array.from(asesoresMap.values());
 
                 // Ordenar por instaladas de mayor a menor
                 asesoresUnicos.sort((a, b) => b.instaladas - a.instaladas);
-
-                // Calcular Estadísticas Globales
-                let totalIngresosGlobal = 0;
-                let totalCaidasGlobal = 0;
-                let totalInstaladasGlobal = 0;
-
-                asesoresUnicos.forEach(as => {
-                    totalIngresosGlobal += as.ingresos;
-                    totalCaidasGlobal += (as.cancCliente + as.cancOp); // Ajustado a Canc OP
-                    totalInstaladasGlobal += as.instaladas;
-                });
-
-                let cobGlobal = totalIngresosGlobal > 0 ? ((totalInstaladasGlobal / totalIngresosGlobal) * 100).toFixed(1) : "0.0";
-                
-                document.getElementById('valIngresadas').innerText = totalIngresosGlobal;
-                document.getElementById('valCaidas').innerText = totalCaidasGlobal;
-                document.getElementById('valCobertura').innerText = cobGlobal + '%';
 
                 llenarTabla(asesoresUnicos);
                 dibujarGrafico(asesoresUnicos);
@@ -205,12 +156,11 @@
             }
         }
 
-        // --- FUNCIÓN PARA LLENAR LA TABLA (Nuevas Columnas) ---
+        // --- FUNCIÓN PARA LLENAR LA TABLA ---
         function llenarTabla(asesores) {
             const cuerpo = document.getElementById('cuerpoTabla');
             cuerpo.innerHTML = '';
             asesores.forEach(as => {
-                // Cálculo de total según las nuevas columnas
                 const totalCalculado = as.cancCliente + as.cancOp + as.programada + as.instaladas;
                 const convertibilidad = as.ingresos > 0 ? ((as.instaladas / as.ingresos) * 100).toFixed(2) : "0.00";
                 
@@ -241,7 +191,6 @@
 
             const ventas = asesores.map(as => as.instaladas);
 
-            // Escala adaptada
             const colores = ventas.map(v => v >= 10 ? 'rgba(255, 215, 0, 0.8)' : v >= 7 ? 'rgba(0, 255, 127, 0.8)' : v >= 4 ? 'rgba(0, 191, 255, 0.8)' : 'rgba(138, 43, 226, 0.6)');
             const bordes = ventas.map(v => v >= 10 ? '#FFD700' : v >= 7 ? '#00FF7F' : v >= 4 ? '#00BFFF' : '#8A2BE2');
             const coloresTxt = ventas.map(v => v >= 10 ? '#FFD700' : v >= 7 ? '#00FF7F' : v >= 4 ? '#00BFFF' : '#E066FF');
@@ -293,7 +242,7 @@
                         }
                     },
                     scales: {
-                        x: { beginAtZero: true, max: 35, grid: { color: 'rgba(255,255,255,0.08)', drawBorder: false }, ticks: { color: '#bbbbbb', font: { size: 14 }, stepSize: 5 } },
+                        x: { beginAtZero: true, max: 25, grid: { color: 'rgba(255,255,255,0.08)', drawBorder: false }, ticks: { color: '#bbbbbb', font: { size: 14 }, stepSize: 5 } },
                         y: { grid: { display: false }, ticks: { color: coloresTxt, font: { size: 15, weight: 'bold' }, padding: 15 } }
                     }
                 }

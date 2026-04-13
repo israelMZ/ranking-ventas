@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Ranking de Ventas Élite - LIVE</title>
+    <title>Ranking de Ventas - LIVE</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* --- ESTILOS GENERALES Y FONDO --- */
@@ -50,7 +50,14 @@
             box-shadow: 0 0 50px rgba(0, 191, 255, 0.2);
         }
 
-        .modal-titulo { color: #00BFFF; font-size: 2em; margin-top: 0; margin-bottom: 30px; text-align: center; text-shadow: 0 0 15px #00BFFF; }
+        .modal-titulo { color: #00BFFF; font-size: 2em; margin-top: 0; margin-bottom: 10px; text-align: center; text-shadow: 0 0 15px #00BFFF; }
+        
+        /* --- ESTILO DE LA FRASE MOTIVACIONAL --- */
+        .frase-motivacional {
+            color: #FFD700; font-size: 1.2em; font-style: italic; text-align: center; 
+            margin-top: 0; margin-bottom: 30px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4); letter-spacing: 1px;
+        }
+
         .btn-cerrar { position: absolute; top: 20px; right: 30px; font-size: 2em; color: white; cursor: pointer; transition: color 0.3s ease; }
         .btn-cerrar:hover { color: #FF4500; }
 
@@ -90,6 +97,8 @@
         <div class="modal-contenido">
             <span id="btnCerrarStats" class="btn-cerrar">✖</span>
             <h2 class="modal-titulo">REPORTE DETALLADO DEL EQUIPO WOW</h2>
+            
+            <p class="frase-motivacional">"Hoy es una oportunidad para ser mejor que el día anterior"</p>
 
             <div class="contenedor-tabla">
                 <table>
@@ -195,7 +204,7 @@
 
             Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
             
-            // Si el gráfico ya existe, solo actualizamos los datos (sin animación de carga repetitiva)
+            // Lógica de actualización suave
             if (miGrafico) { 
                 miGrafico.data.labels = nombresInsignia;
                 miGrafico.data.datasets[0].data = ventas;
@@ -204,7 +213,6 @@
                 miGrafico.options.scales.y.ticks.color = coloresTxt;
                 miGrafico.update();
             } else {
-                // Si es la primera vez que carga, crea el gráfico con la animación en cascada
                 let delayed;
                 miGrafico = new Chart(ctx, {
                     type: 'bar',
@@ -262,15 +270,13 @@
         document.getElementById('btnCerrarStats').addEventListener('click', () => modal.classList.remove('mostrar'));
 
         // =====================================================================
-        // 🚀 INICIALIZACIÓN Y AUTO-REFRESH (POLLING)
+        // 🚀 INICIALIZACIÓN Y AUTO-REFRESH (POLLING CADA 2 MINUTOS)
         // =====================================================================
         
-        // 1. Cargar los datos inmediatamente al abrir la página
         cargarDatos();
 
-        // 2. Configurar el "Latido": Repetir la carga cada 1 hora exactamente
-        // 1000 ms * 60 s * 60 m = 3,600,000 milisegundos
-        setInterval(cargarDatos, 3600000); 
+        // 120,000 milisegundos = 2 minutos
+        setInterval(cargarDatos, 120000); 
 
     </script>
 </body>

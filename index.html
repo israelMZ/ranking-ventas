@@ -6,9 +6,20 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* --- ESTILOS GENERALES Y FONDO --- */
-        body { margin: 0; padding: 40px; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
+        body { margin: 0; padding: 40px; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; background-color: #121212; }
         .video-fondo { position: fixed; right: 0; bottom: 0; min-width: 100%; min-height: 100%; z-index: -2; object-fit: cover; }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); z-index: -1; }
+
+        /* --- MENSAJE DE ERROR --- */
+        #mensajeAlerta {
+            display: none; background: rgba(255, 69, 0, 0.9); color: white; padding: 15px 30px; 
+            border-radius: 10px; font-weight: bold; margin-bottom: 20px; text-align: center; border: 1px solid #FF4500;
+        }
+
+        /* --- BARRA DE PROGRESO 100% CSS --- */
+        #syncProgressBarContainer { position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: rgba(255, 255, 255, 0.05); z-index: 9999; }
+        @keyframes llenarBarra { 0% { width: 0%; opacity: 1; } 95% { opacity: 1; } 100% { width: 100%; opacity: 0; } }
+        #syncProgressBar { height: 100%; width: 0%; background: #00BFFF; box-shadow: 0 0 15px #00BFFF, 0 0 5px #00BFFF; animation: llenarBarra 120s linear infinite; }
 
         /* --- CONTENEDOR PRINCIPAL --- */
         .container {
@@ -20,12 +31,7 @@
         .chart-wrapper { position: relative; height: 80vh; min-height: 1000px; width: 100%; }
         #rankingVentas { filter: drop-shadow(0px 0px 10px rgba(255, 255, 255, 0.25)); }
 
-        @keyframes flotarYBrillar {
-            0% { transform: translateY(0px); text-shadow: 0 0 10px #FFD700; }
-            50% { transform: translateY(-10px); text-shadow: 0 0 30px #FFD700, 0 0 15px #FFF; }
-            100% { transform: translateY(0px); text-shadow: 0 0 10px #FFD700; }
-        }
-
+        @keyframes flotarYBrillar { 0% { transform: translateY(0px); text-shadow: 0 0 10px #FFD700; } 50% { transform: translateY(-10px); text-shadow: 0 0 30px #FFD700, 0 0 15px #FFF; } 100% { transform: translateY(0px); text-shadow: 0 0 10px #FFD700; } }
         h1 { color: #FFD700; text-align: center; z-index: 1; font-size: 3.5em; letter-spacing: 3px; margin-bottom: 30px; animation: flotarYBrillar 3s ease-in-out infinite; }
 
         /* --- BOTÓN --- */
@@ -43,21 +49,9 @@
             justify-content: center; align-items: center; opacity: 0; transition: opacity 0.4s ease; padding: 20px; box-sizing: border-box;
         }
         #modalStats.mostrar { display: flex; opacity: 1; }
-
-        .modal-contenido {
-            background: rgba(20, 20, 25, 0.8); padding: 40px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1);
-            width: 100%; max-width: 1500px; max-height: 90vh; display: flex; flex-direction: column; position: relative;
-            box-shadow: 0 0 50px rgba(0, 191, 255, 0.2);
-        }
-
+        .modal-contenido { background: rgba(20, 20, 25, 0.8); padding: 40px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); width: 100%; max-width: 1500px; max-height: 90vh; display: flex; flex-direction: column; position: relative; box-shadow: 0 0 50px rgba(0, 191, 255, 0.2); }
         .modal-titulo { color: #00BFFF; font-size: 2em; margin-top: 0; margin-bottom: 10px; text-align: center; text-shadow: 0 0 15px #00BFFF; }
-        
-        /* --- ESTILO DE LA FRASE MOTIVACIONAL --- */
-        .frase-motivacional {
-            color: #FFD700; font-size: 1.2em; font-style: italic; text-align: center; 
-            margin-top: 0; margin-bottom: 30px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4); letter-spacing: 1px;
-        }
-
+        .frase-motivacional { color: #FFD700; font-size: 1.2em; font-style: italic; text-align: center; margin-top: 0; margin-bottom: 30px; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4); letter-spacing: 1px; }
         .btn-cerrar { position: absolute; top: 20px; right: 30px; font-size: 2em; color: white; cursor: pointer; transition: color 0.3s ease; }
         .btn-cerrar:hover { color: #FF4500; }
 
@@ -82,10 +76,16 @@
         <source src="tigre.mp4" type="video/mp4">
     </video>
 
+    <div id="syncProgressBarContainer">
+        <div id="syncProgressBar"></div>
+    </div>
+
     <div class="overlay"></div>
 
     <h1>🏆 RANKING DE VENTAS 🏆</h1>
     
+    <div id="mensajeAlerta"></div>
+
     <div class="container">
         <div class="chart-wrapper">
             <canvas id="rankingVentas"></canvas>
@@ -97,9 +97,7 @@
         <div class="modal-contenido">
             <span id="btnCerrarStats" class="btn-cerrar">✖</span>
             <h2 class="modal-titulo">REPORTE DETALLADO DEL EQUIPO</h2>
-            
             <p class="frase-motivacional">"Hoy es una oportunidad para ser mejor que el día anterior"</p>
-
             <div class="contenedor-tabla">
                 <table>
                     <thead>
@@ -122,9 +120,11 @@
     </div>
 
     <script>
+        // SI LA PANTALLA SIGUE EN BLANCO LUEGO DE ESTO, REVISA QUE ESTE LINK ESTÉ ACTIVO EN TU NAVEGADOR
         const URL_SHEET = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTfvuQqIcH6Zv8rqvsqeolWoX7Z3lIKZqz2nX-Q0aCRBZcPRvXAXz8rjKyoAZ-OmiI9GfpNkMjK9Uht/pub?output=csv';
 
         let miGrafico = null;
+        const alerta = document.getElementById('mensajeAlerta');
 
         async function cargarDatos() {
             try {
@@ -132,10 +132,18 @@
                 const urlConFiltro = URL_SHEET + '&t=' + new Date().getTime();
                 
                 const respuesta = await fetch(urlConFiltro);
-                const dataRaw = await respuesta.text();
                 
+                if (!respuesta.ok) {
+                    throw new Error("No se pudo conectar a Google Sheets. Verifica que el enlace esté público.");
+                }
+
+                const dataRaw = await respuesta.text();
                 const filas = dataRaw.split('\n').slice(1); 
                 
+                if (filas.length === 0 || dataRaw.trim() === '') {
+                    throw new Error("El Excel fue leído, pero parece estar vacío o con formato incorrecto.");
+                }
+
                 let asesoresMap = new Map();
 
                 filas.forEach(linea => {
@@ -165,7 +173,15 @@
                 });
 
                 let asesoresUnicos = Array.from(asesoresMap.values());
+                
+                if (asesoresUnicos.length === 0) {
+                    throw new Error("No se detectaron asesores. Revisa las columnas de tu Excel.");
+                }
+
                 asesoresUnicos.sort((a, b) => b.instaladas - a.instaladas);
+
+                // Si todo sale bien, escondemos alertas
+                alerta.style.display = 'none';
 
                 llenarTabla(asesoresUnicos);
                 dibujarGrafico(asesoresUnicos);
@@ -173,7 +189,10 @@
                 console.log("Datos gráficos actualizados: " + new Date().toLocaleTimeString());
 
             } catch (error) {
-                console.error("Error cargando datos:", error);
+                // AQUÍ ATRAPAMOS EL ERROR Y LO MOSTRAMOS EN PANTALLA
+                alerta.style.display = 'block';
+                alerta.innerText = "⚠️ " + error.message;
+                console.error("Error crítico:", error);
             }
         }
 
@@ -216,7 +235,6 @@
 
             Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
             
-            // LA SOLUCIÓN: DESTRUIR Y RECONSTRUIR SIEMPRE
             if (miGrafico) { 
                 miGrafico.destroy();
             }

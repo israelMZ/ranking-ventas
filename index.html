@@ -101,3 +101,198 @@
             <p class="frase-motivacional">"Hoy es una oportunidad para ser mejor que el día anterior"</p>
 
             <div class="contenedor-tabla">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="col-asesor border-right">ASESOR</th>
+                            <th class="col-naranja border-right">INGRESOS</th>
+                            <th class="col-rojo">CANC. CLIENTE</th>
+                            <th class="col-rojo border-right">CANC. OP</th>
+                            <th class="col-azul border-right">PROGRAMADA</th>
+                            <th class="col-verde border-right">INSTALADAS</th>
+                            <th class="col-naranja border-right">TOTAL</th>
+                            <th class="col-naranja">CONVERTIBILIDAD</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpoTabla">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const URL_SHEET = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTfvuQqIcH6Zv8rqvsqeolWoX7Z3lIKZqz2nX-Q0aCRBZcPRvXAXz8rjKyoAZ-OmiI9GfpNkMjK9Uht/pub?output=csv';
+
+        let miGrafico = null;
+
+        async function cargarDatos() {
+            try {
+                const respuesta = await fetch(URL_SHEET);
+                const dataRaw = await respuesta.text();
+                
+                const filas = dataRaw.split('\n').slice(1); 
+                
+                // --- LÓGICA DE SUMATORIA ANTI-DUPLICADOS (CORREGIDA) ---
+                // Usamos un Map para agrupar y sumar
+                let asesoresMap = new Map();
+
+                filas.forEach(linea => {
+                    const c = linea.replace(/\r/g, '').split(','); 
+                    if(c.length < 6 || c[0].trim() === '' || c[0].trim().toUpperCase() === 'ASESOR') return; 
+                    
+                    const nombre = c[0].trim();
+                    const ingresos = parseInt(c[1]) || 0;
+                    const cancCliente = parseInt(c[2]) || 0;
+                    const cancOp = parseInt(c[3]) || 0;
+                    const programada = parseInt(c[4]) || 0;
+                    const instaladas = parseInt(c[5]) || 0;
+
+                    // Si el asesor ya existe, SUMAMOS sus valores
+                    if (asesoresMap.has(nombre)) {
+                        const asExistente = asesoresMap.get(nombre);
+                        asesoresMap.set(nombre, { 
+                            nombre, 
+                            ingresos: asExistente.ingresos + ingresos, 
+                            cancCliente: asExistente.cancCliente + cancCliente, 
+                            cancOp: asExistente.cancOp + cancOp, 
+                            programada: asExistente.programada + programada, 
+                            instaladas: asExistente.instaladas + instaladas 
+                        });
+                    } else {
+                        // Si no existe, lo agregamos como nuevo
+                        asesoresMap.set(nombre, { nombre, ingresos, cancCliente, cancOp, programada, instaladas });
+                    }
+                });
+
+                let asesoresUnicos = Array.from(asesoresMap.values());
+                asesoresUnicos.sort((a, b) => b.instaladas - a.instaladas);
+
+                llenarTabla(asesoresUnicos);
+                dibujarGrafico(asesoresUnicos);
+
+                console.log("Sincronización exitosa: " + new Date().toLocaleTimeString());
+
+            } catch (error) {
+                console.error("Error cargando Google Sheets:", error);
+            }
+        }
+
+        // --- FUNCIÓN PARA LLENAR LA TABLA ---
+        function llenarTabla(asesores) {
+            const cuerpo = document.getElementById('cuerpoTabla');
+            cuerpo.innerHTML = '';
+            asesores.forEach(as => {
+                const totalCalculado = as.cancCliente + as.cancOp + as.programada + as.instaladas;
+                const convertibilidad = as.ingresos > 0 ? ((as.instaladas / as.ingresos) * 100).toFixed(2) : "0.00";
+                
+                cuerpo.innerHTML += `
+                    <tr>
+                        <td class="col-asesor border-right">${as.nombre}</td>
+                        <td class="col-naranja border-right">${as.ingresos}</td>
+                        <td class="col-rojo">${as.cancCliente}</td>
+                        <td class="col-rojo border-right">${as.cancOp}</td>
+                        <td class="col-azul border-right">${as.programada}</td>
+                        <td class="col-verde border-right">${as.instaladas}</td>
+                        <td class="col-naranja border-right">${totalCalculado}</td>
+                        <td class="col-naranja">${convertibilidad} %</td>
+                    </tr>`;
+            });
+        }
+
+        // --- FUNCIÓN PARA DIBUJAR EL GRÁFICO ---
+        function dibujarGrafico(asesores) {
+            const ctx = document.getElementById('rankingVentas').getContext('2d');
+            
+            const nombresInsignia = asesores.map((as, i) => {
+                if (i === 0) return '👑 ' + as.nombre;
+                if (i === 1) return '🥈 ' + as.nombre;
+                if (i === 2) return '🥉 ' + as.nombre;
+                return as.nombre;
+            });
+
+            const ventas = asesores.map(as => as.instaladas);
+
+            const colores = ventas.map(v => v >= 10 ? 'rgba(255, 215, 0, 0.8)' : v >= 7 ? 'rgba(0, 255, 127, 0.8)' : v >= 4 ? 'rgba(0, 191, 255, 0.8)' : 'rgba(138, 43, 226, 0.6)');
+            const bordes = ventas.map(v => v >= 10 ? '#FFD700' : v >= 7 ? '#00FF7F' : v >= 4 ? '#00BFFF' : '#8A2BE2');
+            const coloresTxt = ventas.map(v => v >= 10 ? '#FFD700' : v >= 7 ? '#00FF7F' : v >= 4 ? '#00BFFF' : '#E066FF');
+
+            Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+            
+            // Lógica de actualización suave
+            if (miGrafico) { 
+                miGrafico.data.labels = nombresInsignia;
+                miGrafico.data.datasets[0].data = ventas;
+                miGrafico.data.datasets[0].backgroundColor = colores;
+                miGrafico.data.datasets[0].borderColor = bordes;
+                miGrafico.options.scales.y.ticks.color = coloresTxt;
+                miGrafico.update();
+            } else {
+                let delayed;
+                miGrafico = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: nombresInsignia,
+                        datasets: [{
+                            label: 'Ventas Instaladas',
+                            data: ventas,
+                            backgroundColor: colores,
+                            borderColor: bordes,
+                            borderWidth: 2,
+                            borderRadius: 10,
+                            barPercentage: 0.7
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                        animation: {
+                            onComplete: () => { delayed = true; },
+                            delay: (context) => {
+                                let delay = 0;
+                                if (context.type === 'data' && context.mode === 'default' && !delayed) { delay = context.dataIndex * 150; }
+                                return delay;
+                            },
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.95)', titleFont: { size: 18, weight: 'bold' }, bodyFont: { size: 15 }, padding: 15, displayColors: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        const as = asesores[context.dataIndex];
+                                        const conv = as.ingresos > 0 ? ((as.instaladas / as.ingresos) * 100).toFixed(1) : "0.0";
+                                        return [
+                                            ` ✅ Instaladas: ${as.instaladas}`,
+                                            ` 📥 Ingresadas: ${as.ingresos}`,
+                                            ` 📊 Convertibilidad: ${conv}%`
+                                        ];
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { beginAtZero: true, max: 30, grid: { color: 'rgba(255,255,255,0.08)', drawBorder: false }, ticks: { color: '#bbbbbb', font: { size: 14 }, stepSize: 5 } },
+                            y: { grid: { display: false }, ticks: { color: coloresTxt, font: { size: 15, weight: 'bold' }, padding: 15 } }
+                        }
+                    }
+                });
+            }
+        }
+
+        // --- EVENTOS DEL MODAL ---
+        const modal = document.getElementById('modalStats');
+        document.getElementById('btnAbrirStats').addEventListener('click', () => modal.classList.add('mostrar'));
+        document.getElementById('btnCerrarStats').addEventListener('click', () => modal.classList.remove('mostrar'));
+
+        // =====================================================================
+        // 🚀 INICIALIZACIÓN Y AUTO-REFRESH (POLLING CADA 2 MINUTOS)
+        // =====================================================================
+        
+        cargarDatos();
+
+        // 120,000 milisegundos = 2 minutos
+        setInterval(cargarDatos, 120000); 
+
+    </script>
+</body>
+</html>

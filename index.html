@@ -10,25 +10,6 @@
         .video-fondo { position: fixed; right: 0; bottom: 0; min-width: 100%; min-height: 100%; z-index: -2; object-fit: cover; }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); z-index: -1; }
 
-        /* --- BARRA DE PROGRESO DE SINCRONIZACIÓN NEÓN --- */
-        #syncProgressBarContainer {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.05);
-            z-index: 9999;
-        }
-
-        #syncProgressBar {
-            height: 100%;
-            width: 0%;
-            background: #00BFFF;
-            box-shadow: 0 0 15px #00BFFF, 0 0 5px #00BFFF;
-            transition: width 1s linear; /* Animación fluida de 1 segundo por paso */
-        }
-
         /* --- CONTENEDOR PRINCIPAL --- */
         .container {
             width: 90%; max-width: 1300px; background: rgba(20, 20, 25, 0.4); padding: 40px; border-radius: 25px;
@@ -100,10 +81,6 @@
     <video autoplay loop muted playsinline class="video-fondo">
         <source src="tigre.mp4" type="video/mp4">
     </video>
-
-    <div id="syncProgressBarContainer">
-        <div id="syncProgressBar"></div>
-    </div>
 
     <div class="overlay"></div>
 
@@ -237,6 +214,9 @@
             const bordes = ventas.map(v => v >= 10 ? '#FFD700' : v >= 7 ? '#00FF7F' : v >= 4 ? '#00BFFF' : '#8A2BE2');
             const coloresTxt = ventas.map(v => v >= 10 ? '#FFD700' : v >= 7 ? '#00FF7F' : v >= 4 ? '#00BFFF' : '#E066FF');
 
+            Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+            
+            // LA SOLUCIÓN: DESTRUIR Y RECONSTRUIR SIEMPRE
             if (miGrafico) { 
                 miGrafico.destroy();
             }
@@ -291,34 +271,9 @@
         document.getElementById('btnAbrirStats').addEventListener('click', () => modal.classList.add('mostrar'));
         document.getElementById('btnCerrarStats').addEventListener('click', () => modal.classList.remove('mostrar'));
 
-        // =====================================================================
-        // 🚀 INICIALIZACIÓN, AUTO-REFRESH Y BARRA DE PROGRESO
-        // =====================================================================
-        
-        const INTERVALO_MS = 120000; // 2 minutos
-        const barraProgreso = document.getElementById('syncProgressBar');
-
-        function iniciarCicloSincronizacion() {
-            // Carga los datos inmediatamente
-            cargarDatos();
-            
-            // Reinicia la barra a 0%
-            barraProgreso.style.transition = 'none';
-            barraProgreso.style.width = '0%';
-            
-            // Forzamos un reflow para que el navegador procese el ancho 0%
-            void barraProgreso.offsetWidth;
-            
-            // Iniciamos la animación hacia el 100% que durará exactamente 2 minutos
-            barraProgreso.style.transition = `width ${INTERVALO_MS}ms linear`;
-            barraProgreso.style.width = '100%';
-        }
-
-        // Arrancamos el primer ciclo
-        iniciarCicloSincronizacion();
-
-        // Repetimos el ciclo indefinidamente cada 2 minutos
-        setInterval(iniciarCicloSincronizacion, INTERVALO_MS); 
+        // INICIO Y AUTO-REFRESH (120000ms = 2 MINUTOS)
+        cargarDatos();
+        setInterval(cargarDatos, 120000); 
 
     </script>
 </body>
